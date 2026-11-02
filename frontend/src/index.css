@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+/* game palette (dark brown and gold, as in the client windows) */
+@theme {
+  --color-bg: #121110;
+  --color-panel: #1c1a17;
+  --color-panel2: #211e1a;
+  --color-head: #3a3127;
+  --color-win: #3b3226;
+  --color-well: #161412;
+  --color-line: #3f3933;
+  --color-line-strong: #b8945e;
+  --color-deco: #c9a46a;
+  --color-gold: #d8b679;
+  --color-text: #ede6d9;
+  --color-muted: #8f877b;
+  --color-ok: #6cfb4b;
+  --color-bad: #ff5a4a;
+  --color-pw-blue: #8080ff;
+  --color-pw-gold: #ffdc50;
+  --color-pw-stone: #7fe8c8;
+  --font-sans: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --font-serif: "Cormorant SC", Georgia, serif;
+  --font-game: "Segoe UI", Tahoma, Arial, sans-serif;
+}
+
+@layer base {
+  html { color-scheme: dark; }
+  body {
+    @apply bg-bg text-text font-sans;
+    background-image: radial-gradient(900px 420px at 50% -180px, rgba(201, 164, 106, .08), transparent 70%);
+    font-variant-numeric: tabular-nums;
+  }
+  input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+  input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+}
+
+@layer components {
+  .panel { @apply relative rounded border border-line bg-panel; }
+  .panel-title { @apply flex items-baseline justify-between gap-3 px-5 pt-6 pb-1 font-serif text-2xl font-semibold; }
+  .btn { @apply min-h-9 cursor-pointer whitespace-nowrap rounded-md border border-line bg-panel2 px-3 text-sm font-medium hover:border-line-strong disabled:cursor-default disabled:opacity-45; }
+  .input { @apply min-h-9 w-full rounded-md border border-line bg-well px-2.5 text-sm text-text focus:border-line-strong focus:outline-none; }
+  .card-game { @apply rounded-[3px] border border-[#6d5932] bg-black/90 px-2.5 py-2 font-game text-sm leading-snug text-white; }
+  .pixel { image-rendering: pixelated; }
+}
+
+@keyframes bump { 0% { background: rgba(108, 251, 75, .18); color: #6cfb4b; } 100% { background: transparent; } }
+.bump { animation: bump .9s ease-out; }

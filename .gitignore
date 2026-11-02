@@ -1,0 +1,8 @@
+node_modules/
+frontend/dist/
+bin/
+obj/
+backend/PwCalc.Api/wwwroot/
+backend/PwCalc.Api/appsettings.Development.json
+.pgpass.local
+install*.log

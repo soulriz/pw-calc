@@ -1,0 +1,28 @@
+import type { BuildState, Item, Meta } from './types';
+
+async function get<T>(url: string): Promise<T> {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`${r.status} ${url}`);
+  return r.json() as Promise<T>;
+}
+async function send<T>(method: string, url: string, body?: unknown): Promise<T> {
+  const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  if (!r.ok) throw new Error(`${r.status} ${url}`);
+  return (r.status === 204 ? undefined : await r.json()) as T;
+}
+
+export const api = {
+  meta: () => get<Meta>('/api/meta'),
+  items: (p: { slot: string; q?: string; classBit?: number; level: number; take?: number }) => {
+    const qs = new URLSearchParams({ slot: p.slot, level: String(p.level), take: String(p.take ?? 300) });
+    if (p.q) qs.set('q', p.q);
+    if (p.classBit != null) qs.set('classBit', String(p.classBit));
+    return get<{ total: number; items: Item[] }>('/api/items?' + qs);
+  },
+  itemsByIds: (ids: string[]) => (ids.length ? get<Item[]>('/api/items/by-ids?ids=' + encodeURIComponent(ids.join(','))) : Promise.resolve([])),
+  builds: () => get<{ id: string; name: string; updatedAt: string }[]>('/api/builds'),
+  build: (id: string) => get<{ id: string; name: string; data: BuildState }>(`/api/builds/${id}`),
+  createBuild: (name: string, data: BuildState) => send<{ id: string; name: string }>('POST', '/api/builds', { name, data }),
+  updateBuild: (id: string, name: string, data: BuildState) => send<{ id: string; name: string }>('PUT', `/api/builds/${id}`, { name, data }),
+  deleteBuild: (id: string) => send<void>('DELETE', `/api/builds/${id}`),
+};
