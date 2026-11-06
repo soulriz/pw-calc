@@ -4,6 +4,8 @@ import type { StatKey } from './types';
 export const REF = [0, 1, 2, 3.05, 4.3, 5.75, 7.55, 9.95, 13.05, 17.05, 22.3, 29, 37.5];
 
 export const STAT_KEYS: StatKey[] = ['vit', 'str', 'int', 'dex'];
+// lowest value and what "Обнулити" sets; free points still count from 5, so a reset frees 2 points per stat
+export const MIN_STAT = 3;
 export const STAT_NAME: Record<StatKey, string> = { vit: 'Витривалість', str: 'Сила', int: 'Інтелект', dex: 'Спритність' };
 export const ABBR: Record<StatKey, string> = { vit: 'Витр', int: 'Інтл', str: 'Сила', dex: 'Спрт' };
 export const REQ_SHORT: Record<StatKey, string> = { str: 'сила', dex: 'спритність', int: 'інтелект', vit: 'витривалість' };

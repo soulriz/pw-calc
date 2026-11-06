@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from './api';
 import { buffOk, cleanGear, type Catalog } from './calc';
-import { ACTIVE_SLOTS, CLASSES, MAX_LEVEL, STAT_KEYS, STORAGE_KEY } from './constants';
+import { ACTIVE_SLOTS, CLASSES, MAX_LEVEL, MIN_STAT, STAT_KEYS, STORAGE_KEY } from './constants';
 import type { BuffLevel, BuildState, Gear, Item, Meta, StatKey } from './types';
 
 export const defaults = (): BuildState => ({
@@ -23,9 +23,9 @@ export function sanitize(raw: unknown): BuildState {
   if (lv >= 1 && lv <= MAX_LEVEL) d.level = lv;
   for (const k of STAT_KEYS) {
     const v = parseInt(String(s.stats?.[k]), 10);
-    if (v >= 5 && v <= 1000) d.stats[k] = v;
+    if (v >= MIN_STAT && v <= 1000) d.stats[k] = v;
     const w = parseInt(String(s.saved?.[k]), 10);
-    d.saved[k] = w >= 5 && w <= 1000 ? w : d.stats[k];
+    d.saved[k] = w >= MIN_STAT && w <= 1000 ? w : d.stats[k];
   }
   const okGear = (g: unknown): g is Gear => !!g && typeof (g as Gear).id === 'string';
   if (s.gear && typeof s.gear === 'object') for (const sl of ACTIVE_SLOTS) { const g = s.gear[sl.id]; if (okGear(g)) d.gear[sl.id] = g; }

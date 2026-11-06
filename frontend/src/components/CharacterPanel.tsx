@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { freePoints, type Output, type Result } from '../calc';
-import { ABBR, CLASSES, CLASS_ICON, MAX_LEVEL, STAT_KEYS, STAT_NAME } from '../constants';
+import { ABBR, CLASSES, CLASS_ICON, MAX_LEVEL, MIN_STAT, STAT_KEYS, STAT_NAME } from '../constants';
 import { dec, nf } from '../format';
 import type { BuildState, StatKey } from '../types';
 import { Panel, StatValue } from './common';
@@ -72,7 +72,7 @@ export function CharacterPanel({ state, R, update }: { state: BuildState; R: Res
   const setStat = (k: StatKey, v: number) => update(s => {
     const cur = s.stats[k];
     const max = Math.max(cur, cur + freePoints(s));
-    const nv = Math.max(5, Math.min(Math.round(v), max));
+    const nv = Math.max(MIN_STAT, Math.min(Math.round(v), max));
     return nv === cur ? s : { ...s, stats: { ...s.stats, [k]: nv } };
   });
   const same = STAT_KEYS.every(k => state.stats[k] === state.saved[k]);
@@ -130,19 +130,19 @@ export function CharacterPanel({ state, R, update }: { state: BuildState; R: Res
             return (
               <div key={k} className="flex items-center gap-1">
                 <label htmlFor={'st-' + k} className="w-9 flex-none font-bold text-gold" title={STAT_NAME[k]}>{ABBR[k]}</label>
-                <input id={'st-' + k} type="number" min={5} aria-label={STAT_NAME[k]} value={shown}
+                <input id={'st-' + k} type="number" min={MIN_STAT} aria-label={STAT_NAME[k]} value={shown}
                   title={bonus ? `Базове значення ${state.stats[k]}, від екіпіровки +${bonus}` : ''}
                   className={'mr-1 h-8 w-11 flex-none border-0 border-b border-line bg-transparent text-center font-bold focus:border-line-strong focus:bg-well focus:outline-none text-ok'}
                   onFocus={e => { setFocus(k); e.target.select(); }} onBlur={() => setFocus(null)}
-                  onChange={e => { const v = parseInt(e.target.value, 10); if (!Number.isNaN(v) && v >= 5) setStat(k, v); }} />
+                  onChange={e => { const v = parseInt(e.target.value, 10); if (!Number.isNaN(v) && v >= MIN_STAT) setStat(k, v); }} />
                 <StepButton label={'Збільшити: ' + STAT_NAME[k]} disabled={free <= 0} onStep={n => setStat(k, state.stats[k] + n)} />
-                <StepButton label={'Зменшити: ' + STAT_NAME[k]} disabled={state.stats[k] <= 5} onStep={n => setStat(k, state.stats[k] - n)} />
+                <StepButton label={'Зменшити: ' + STAT_NAME[k]} disabled={state.stats[k] <= MIN_STAT} onStep={n => setStat(k, state.stats[k] - n)} />
               </div>
             );
           })}
         </div>
         <div className="mt-3 flex flex-wrap justify-end gap-2">
-          <button className="btn" onClick={() => update(s => ({ ...s, stats: { vit: 5, str: 5, int: 5, dex: 5 } }))}>Обнулити</button>
+          <button className="btn" onClick={() => update(s => ({ ...s, stats: { vit: MIN_STAT, str: MIN_STAT, int: MIN_STAT, dex: MIN_STAT } }))}>Обнулити</button>
           <button className="btn" disabled={same} onClick={() => update(s => ({ ...s, stats: { ...s.saved } }))}>Скасувати</button>
           <button className="btn border-line-strong bg-win" disabled={same} onClick={() => update(s => ({ ...s, saved: { ...s.stats } }))}>Зберегти</button>
         </div>
