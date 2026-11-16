@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { freePoints, type Output, type Result } from '../calc';
 import { ABBR, CLASSES, CLASS_ICON, MAX_LEVEL, MIN_STAT, STAT_KEYS, STAT_NAME } from '../constants';
 import { dec, nf } from '../format';
@@ -68,7 +68,6 @@ function StepButton({ label, disabled, onStep }: { label: string; disabled: bool
 export function CharacterPanel({ state, R, update }: { state: BuildState; R: Result; update: (fn: (s: BuildState) => BuildState) => void }) {
   const C = CLASSES[state.cls];
   const free = freePoints(state);
-  const [focus, setFocus] = useState<StatKey | null>(null);
   const setStat = (k: StatKey, v: number) => update(s => {
     const cur = s.stats[k];
     const max = Math.max(cur, cur + freePoints(s));
@@ -123,18 +122,20 @@ export function CharacterPanel({ state, R, update }: { state: BuildState; R: Res
           <span className="font-serif text-xl font-bold text-gold">Характеристики</span>
         </div>
         {free < 0 && <p className="mb-2 text-sm text-bad">Для {state.level} рівня розподілено забагато. Зменште характеристики на {nf(-free)}.</p>}
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(148px,1fr))] gap-x-2.5 gap-y-2">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-x-2.5 gap-y-2">
           {(['vit', 'int', 'str', 'dex'] as StatKey[]).map(k => {
             const bonus = R.G[k] || 0;
-            const shown = focus === k ? String(state.stats[k]) : String(state.stats[k] + bonus);
             return (
               <div key={k} className="flex items-center gap-1">
                 <label htmlFor={'st-' + k} className="w-9 flex-none font-bold text-gold" title={STAT_NAME[k]}>{ABBR[k]}</label>
-                <input id={'st-' + k} type="number" min={MIN_STAT} aria-label={STAT_NAME[k]} value={shown}
-                  title={bonus ? `Базове значення ${state.stats[k]}, від екіпіровки +${bonus}` : ''}
-                  className={'mr-1 h-8 w-11 flex-none border-0 border-b border-line bg-transparent text-center font-bold focus:border-line-strong focus:bg-well focus:outline-none text-ok'}
-                  onFocus={e => { setFocus(k); e.target.select(); }} onBlur={() => setFocus(null)}
+                {/* base points as in the game window; the gear bonus and the total follow in green */}
+                <input id={'st-' + k} type="number" min={MIN_STAT} aria-label={STAT_NAME[k]} value={state.stats[k]}
+                  className="h-8 w-11 flex-none border-0 border-b border-line bg-transparent text-center font-bold focus:border-line-strong focus:bg-well focus:outline-none"
+                  onFocus={e => e.target.select()}
                   onChange={e => { const v = parseInt(e.target.value, 10); if (!Number.isNaN(v) && v >= MIN_STAT) setStat(k, v); }} />
+                <span className="min-w-[4.5rem] text-sm font-bold whitespace-nowrap text-ok" title={bonus ? `Від екіпіровки ${bonus > 0 ? '+' : ''}${bonus}` : ''}>
+                  {bonus ? `${bonus > 0 ? '+' : '−'}${Math.abs(bonus)} (${state.stats[k] + bonus})` : ''}
+                </span>
                 <StepButton label={'Збільшити: ' + STAT_NAME[k]} disabled={free <= 0} onStep={n => setStat(k, state.stats[k] + n)} />
                 <StepButton label={'Зменшити: ' + STAT_NAME[k]} disabled={state.stats[k] <= MIN_STAT} onStep={n => setStat(k, state.stats[k] - n)} />
               </div>
