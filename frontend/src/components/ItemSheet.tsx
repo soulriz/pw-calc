@@ -218,7 +218,7 @@ export function ItemSheet({ slotId, state, cat, update, remember, onClose }: {
                 <li key={i.id}>
                   <button type="button" aria-pressed={on} onClick={() => choose(i.id)}
                     className={'flex w-full cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-left ' + (on ? 'border-line-strong bg-win' : 'border-line bg-panel2 hover:border-line-strong')}>
-                    <span className="grid h-11 w-11 flex-none place-items-center rounded-md border border-line bg-well"><ItemIcon it={i} className="h-9 w-9" /></span>
+                    <span className="grid h-[40px] w-[40px] flex-none place-items-center rounded-md border border-line bg-well"><ItemIcon it={i} className="h-[32px] w-[32px]" /></span>
                     <span className="min-w-0">
                       <span className="block leading-tight font-bold [text-shadow:0_1px_1px_rgba(0,0,0,.6)]" style={{ color: i.col || '#fff' }}>{i.name}</span>
                       <span className="block text-sm text-muted">{i.slot === 'ammo' ? i.sub : `Рівень ${i.slot === 'book' ? i.gr : i.lvl}`}, {summary(i)}</span>
