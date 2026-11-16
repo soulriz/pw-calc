@@ -25,7 +25,7 @@
 }
 
 @layer base {
-  html { color-scheme: dark; font-size: 13px; } /* game-sized UI: everything in rem scales from here */
+  html { color-scheme: dark; font-size: 15px; } /* game-sized UI: everything in rem scales from here */
   body {
     @apply bg-bg text-text font-sans;
     background-image: radial-gradient(900px 420px at 50% -180px, rgba(201, 164, 106, .08), transparent 70%);
