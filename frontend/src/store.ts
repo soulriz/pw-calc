@@ -74,9 +74,13 @@ export function useCalc() {
     return next;
   }), []);
 
+  /** Loads the items not cached yet; returns all requested items that exist. */
   const ensureItems = useCallback(async (ids: string[]) => {
     const missing = [...new Set(ids)].filter(id => !itemsRef.current[id]);
-    if (missing.length) remember(await api.itemsByIds(missing));
+    const got = missing.length ? await api.itemsByIds(missing) : [];
+    if (got.length) remember(got);
+    const all: Record<string, Item> = { ...itemsRef.current, ...Object.fromEntries(got.map(i => [i.id, i])) };
+    return Object.fromEntries(ids.filter(id => all[id]).map(id => [id, all[id]]));
   }, [remember]);
 
   // first load: meta + the items the saved build uses

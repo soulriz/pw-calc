@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { compute } from './calc';
 import { CLASSES } from './constants';
 import { fmtOut, CharacterPanel } from './components/CharacterPanel';
@@ -11,9 +11,20 @@ import { StatValue, TipProvider } from './components/common';
 import { defaults, useCalc } from './store';
 
 export default function App() {
-  const { meta, cat, state, ready, error, update, replace, remember } = useCalc();
+  const { meta, cat, state, ready, error, update, replace, remember, ensureItems } = useCalc();
   const [sheet, setSheet] = useState<string | null>(null);
   const R = useMemo(() => (cat ? compute(state, cat) : null), [state, cat]);
+
+  // parts of the sets you wear or keep, so set cards show names (only missing ones are fetched)
+  useEffect(() => {
+    if (!cat) return;
+    const ids = new Set<string>();
+    for (const g of [...Object.values(state.gear), ...state.inv]) {
+      const set = cat.meta.sets[cat.items[g.id]?.set ?? ''];
+      set?.items.forEach(id => ids.add(id));
+    }
+    if ([...ids].some(id => !cat.items[id])) ensureItems([...ids]).catch(() => {});
+  }, [state.gear, state.inv, cat, ensureItems]);
 
   if (error) return <p className="p-8 text-bad">Не вдалося завантажити дані з сервера: {error}</p>;
   if (!ready || !cat || !meta || !R) return <p className="p-8 text-muted">Завантаження…</p>;
@@ -35,8 +46,8 @@ export default function App() {
             <CharacterPanel state={state} R={R} update={update} />
           </div>
           <div className="flex flex-col gap-4.5 md:gap-5.5">
-            <GearPanel state={state} R={R} cat={cat} update={update} onOpen={setSheet} />
-            <InventoryPanel state={state} cat={cat} update={update} />
+            <GearPanel state={state} R={R} cat={cat} update={update} onOpen={setSheet} ensureItems={ensureItems} />
+            <InventoryPanel state={state} cat={cat} update={update} onOpen={setSheet} ensureItems={ensureItems} />
             <BuffsPanel state={state} meta={meta} update={update} />
           </div>
         </main>
@@ -48,7 +59,7 @@ export default function App() {
         {[['ЖС', 'hp'], [magic ? 'Маг. атака' : 'Фіз. атака', 'atk'], ['Фіз. захист', 'pdef'], ['Маг. захист', 'mdef']].map(([l, k]) => (
           <div key={k} className="min-w-0 text-center">
             <span className="block truncate text-xs text-muted">{l}</span>
-            <StatValue text={fmtOut(k, R.out, magic)} />
+            <StatValue text={fmtOut(k, R.out, magic)} was={false} />
           </div>
         ))}
       </div>

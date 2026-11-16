@@ -1,15 +1,30 @@
 import type { Catalog, Result } from '../calc';
 import { ACTIVE_SLOTS, CLASSES, SLOTS } from '../constants';
-import type { BuildState } from '../types';
+import { equipItems, unequip, unequipAll } from '../gear';
+import type { BuildState, Item } from '../types';
+import { ContextMenu, useContextMenu, type MenuItem } from './ContextMenu';
 import { ItemCard } from './ItemCard';
 import { ItemIcon, Panel, useTip } from './common';
 
+/** Menu entry that puts on every part of the item's set. */
+export function setMenuItem(it: Item, cat: Catalog, ensureItems: (ids: string[]) => Promise<Record<string, Item>>,
+                            update: (fn: (s: BuildState) => BuildState) => void): MenuItem[] {
+  const set = it.set ? cat.meta.sets[it.set] : undefined;
+  return set ? [{ label: `Вдягнути весь комплект «${set.name}»`, onClick: async () => {
+    const map = await ensureItems(set.items);
+    update(s => equipItems(s, set.items.map(id => map[id]).filter(Boolean)));
+  } }] : [];
+}
+
 /** The game inventory window: 24 cells around the character figure (images from the client). */
-export function GearPanel({ state, R, cat, update, onOpen }: {
+export function GearPanel({ state, R, cat, update, onOpen, ensureItems }: {
   state: BuildState; R: Result; cat: Catalog;
   update: (fn: (s: BuildState) => BuildState) => void; onOpen: (slotId: string) => void;
+  ensureItems: (ids: string[]) => Promise<Record<string, Item>>;
 }) {
   const tip = useTip();
+  const cm = useContextMenu();
+  const takeOffAll: MenuItem = { label: 'Зняти весь шмот', onClick: () => update(unequipAll), danger: true };
   return (
     <Panel id="p-gear" title="Екіпіровка" note={`${R.equipped} з ${ACTIVE_SLOTS.length}`}>
       <div className="relative mx-auto aspect-[324/222] w-full max-w-[486px] rounded-md bg-[url(/ui/bg.png)] bg-[length:100%_100%]">
@@ -27,6 +42,16 @@ export function GearPanel({ state, R, cat, update, onOpen }: {
               title={s.off ? `${s.name}: поки без даних` : it ? undefined : s.title || s.name}
               aria-label={`${s.title || s.name}: ${it ? it.name + (g.r ? ' +' + g.r : '') + (bad ? ', не діє' : '') : 'порожньо'}`}
               onClick={() => onOpen(s.id)}
+              onContextMenu={e => {
+                if (s.off) return;
+                tip.hide();
+                cm.open(e, it ? [
+                  { label: 'Замінити / змінити стати…', onClick: () => onOpen(s.id) },
+                  { label: 'Зняти в інвентар', onClick: () => update(st => unequip(st, s.id)) },
+                  ...setMenuItem(it, cat, ensureItems, update),
+                  takeOffAll,
+                ] : [{ label: 'Вибрати предмет…', onClick: () => onOpen(s.id) }, takeOffAll]);
+              }}
               onPointerEnter={e => { if (it) tip.show(e.currentTarget, <ItemCard it={it} g={g} state={state} cat={cat} />); }}
               onPointerLeave={tip.hide}>
               {it && <ItemIcon it={it} className="absolute top-[7.9%] left-[7.9%] h-[84.2%] w-[84.2%] rounded-sm" />}
@@ -40,6 +65,7 @@ export function GearPanel({ state, R, cat, update, onOpen }: {
           <div className="truncate font-serif text-xl font-bold">{state.name.trim() || 'Без імені'}</div>
           <div className="text-sm text-muted">{CLASSES[state.cls].name}, {state.level} рівень</div>
         </div>
+        <button type="button" className="btn ml-auto" disabled={!R.equipped} onClick={() => update(unequipAll)}>Зняти все</button>
         <div className="flex flex-none overflow-hidden rounded-lg border border-line" role="group" aria-label="Стать персонажа">
           {(['m', 'f'] as const).map(x => (
             <button key={x} type="button" aria-pressed={state.sex === x}
@@ -48,7 +74,8 @@ export function GearPanel({ state, R, cat, update, onOpen }: {
           ))}
         </div>
       </div>
-      <p className="mt-3.5 text-sm text-muted">Натисніть на слот, щоб вибрати предмет і заточку. Затемнені слоти поки без даних.</p>
+      <p className="mt-3.5 text-sm text-muted">Натисніть на слот, щоб вибрати предмет і заточку; права кнопка — меню (зняти, замінити, вдягнути комплект). Затемнені слоти поки без даних.</p>
+      <ContextMenu menu={cm.menu} onClose={cm.close} />
     </Panel>
   );
 }

@@ -46,24 +46,26 @@ export function TipProvider({ children }: { children: ReactNode }) {
 }
 
 /** A stat value that flashes and shows the change (+/−) for a few seconds after it changes. */
-export function StatValue({ text, className = '' }: { text: string; className?: string }) {
+export function StatValue({ text, className = '', was = true }: { text: string; className?: string; was?: boolean }) {
   const prev = useRef(text);
-  const [delta, setDelta] = useState<number | null>(null);
+  const [delta, setDelta] = useState<{ d: number; from: string } | null>(null);
   const [flash, setFlash] = useState(0);
   useEffect(() => {
     if (prev.current === text) return;
     const d = Math.round((firstNum(text) - firstNum(prev.current)) * 100) / 100;
+    const from = prev.current;
     prev.current = text;
     setFlash(f => f + 1);
     if (!d || !Number.isFinite(d)) return;
-    setDelta(d);
+    setDelta({ d, from });
     const t = setTimeout(() => setDelta(null), 8000);
     return () => clearTimeout(t);
   }, [text]);
   return (
-    <span className="whitespace-nowrap">
+    <span className="whitespace-nowrap" title={delta ? `було ${delta.from} → стало ${text}` : undefined}>
+      {delta && was && <span className="mr-1 text-[0.7rem] text-muted line-through">{delta.from}</span>}
       <span key={flash} className={'rounded px-0.5 font-bold ' + (flash ? 'bump ' : '') + className}>{text}</span>
-      {delta != null && <span className={'ml-1 text-xs font-bold ' + (delta > 0 ? 'text-ok' : 'text-bad')}>{(delta > 0 ? '+' : '−') + nf(Math.abs(delta))}</span>}
+      {delta && <span className={'ml-1 text-xs font-bold ' + (delta.d > 0 ? 'text-ok' : 'text-bad')}>{(delta.d > 0 ? '+' : '−') + nf(Math.abs(delta.d))}</span>}
     </span>
   );
 }
