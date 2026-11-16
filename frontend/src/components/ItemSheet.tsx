@@ -140,8 +140,27 @@ export function ItemSheet({ slotId, state, cat, update, remember, onClose }: {
                 {it.add.map((a, k) => (
                   <label key={k} className="flex cursor-pointer items-baseline gap-2 px-0.5 py-1 text-sm">
                     <input type="checkbox" className="flex-none translate-y-0.5 accent-deco" checked={g.a.includes(k)}
-                      onChange={e => setGear(x => ({ ...x, a: e.target.checked ? [...new Set([...x.a, k])] : x.a.filter(i => i !== k) }))} />
+                      onChange={e => setGear(x => {
+                        if (e.target.checked) return { ...x, a: [...new Set([...x.a, k])] };
+                        const v = { ...x.v };
+                        delete v[k];
+                        return { ...x, a: x.a.filter(i => i !== k), v };
+                      })} />
                     <span>{a.t}{!a.e && <span className="text-xs text-muted"> (не рахується)</span>}{a.d && <span className="block text-xs text-muted">{a.d}</span>}</span>
+                    {a.r && g.a.includes(k) && (
+                      // the rolled value inside the min–max of the item's pools
+                      <input type="number" step="any" min={a.r[0]} max={a.r[1]} aria-label={`Значення: ${a.t}`} title={`від ${a.r[0]} до ${a.r[1]}`}
+                        className="input h-7 min-h-7 w-20 flex-none px-1.5"
+                        key={g.v?.[k] ?? 'base'} defaultValue={g.v?.[k] ?? Object.values(a.e!)[0]}
+                        onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                        onBlur={e => {
+                          // applied on leave, so typing "95" is not clamped after the first digit
+                          const n = parseFloat(e.target.value.replace(',', '.'));
+                          const clamped = Number.isFinite(n) ? Math.min(a.r![1], Math.max(a.r![0], n)) : (g.v?.[k] ?? Object.values(a.e!)[0]);
+                          e.target.value = String(clamped);
+                          setGear(x => ({ ...x, v: { ...x.v, [k]: clamped } }));
+                        }} />
+                    )}
                     <span className="ml-auto text-xs whitespace-nowrap text-muted">{dec(a.p * 100, 2)}%</span>
                   </label>
                 ))}

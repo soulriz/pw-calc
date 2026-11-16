@@ -78,7 +78,7 @@ export function compute(s: BuildState, cat: Catalog): Result {
     if (probs.length) continue; // an item works only when its requirements are met
     for (const [k, v] of Object.entries(it.stats || {})) addG(k, v);
     for (const id of g.s) { const sd = stoneSide(cat.stones[id ?? ''], it); if (sd?.e) for (const [k, v] of Object.entries(sd.e)) addG(k, v); }
-    for (const k of g.a) { const e = it.add?.[k]?.e; if (e) for (const [kk, v] of Object.entries(e)) addG(kk, v); }
+    for (const k of g.a) { const e = it.add?.[k]?.e; if (e) for (const [kk, v] of Object.entries(e)) addG(kk, g.v?.[k] ?? v); }
     for (const f of it.fix || []) if (f.e) for (const [k, v] of Object.entries(f.e)) addG(k, v);
     for (const c of g.c) addG(c.k, c.v);
     if (it.set) setCount[it.set] = (setCount[it.set] || 0) + 1;
@@ -171,5 +171,11 @@ export function cleanGear(g: Partial<Gear> & { id: string }, it: Item | undefine
   const a = Array.isArray(g.a) ? [...new Set(g.a.map(Number))].filter(k => it?.add && k >= 0 && k < it.add.length) : [];
   const c = (Array.isArray(g.c) ? g.c : []).filter(x => x && CUSTOM[x.k] && Number.isFinite(+x.v)).slice(0, 40).map(x => ({ k: x.k, v: +x.v }));
   const m = typeof g.m === 'string' ? g.m.trim().slice(0, 32) : '';  // crafter's nick (from Clan Dossier)
-  return { id: g.id, r: it?.ref ? r : 0, n, s, a, c, ...(m ? { m } : {}) };
+  // rolled values: only for chosen properties that have a range, kept inside it
+  const v: Record<number, number> = {};
+  for (const [k, x] of Object.entries(g.v || {})) {
+    const rg = it?.add?.[+k]?.r;
+    if (rg && a.includes(+k) && Number.isFinite(+x)) v[+k] = Math.min(rg[1], Math.max(rg[0], +x));
+  }
+  return { id: g.id, r: it?.ref ? r : 0, n, s, a, c, ...(m ? { m } : {}), ...(Object.keys(v).length ? { v } : {}) };
 }

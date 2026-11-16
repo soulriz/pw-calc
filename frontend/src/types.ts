@@ -2,7 +2,8 @@
 
 export type Effect = Record<string, number>;
 
-export interface AddonOpt { t: string; p: number; e?: Effect; d?: string }
+/** r: min–max of this stat over the item's pools, when the rolled value can differ */
+export interface AddonOpt { t: string; p: number; e?: Effect; d?: string; r?: [number, number] }
 export interface FixedProp { t: string; e?: Effect }
 
 export interface Item {
@@ -69,7 +70,8 @@ export type StatKey = 'vit' | 'str' | 'int' | 'dex';
 export type BuffLevel = number | 'rs' | 'je';
 
 /** An item as worn or kept: refine, sockets with stones, chosen and custom properties. */
-export interface Gear { id: string; r: number; n: number; s: (string | null)[]; a: number[]; c: { k: string; v: number }[]; m?: string }
+/** v: rolled value of a chosen property (index in item.add), set by the user inside its range */
+export interface Gear { id: string; r: number; n: number; s: (string | null)[]; a: number[]; c: { k: string; v: number }[]; m?: string; v?: Record<number, number> }
 
 export interface BuildState {
   name: string;

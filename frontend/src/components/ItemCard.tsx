@@ -42,7 +42,8 @@ export function ItemCard({ it, g, state, cat }: { it: Item; g?: Gear; state: Bui
   for (const k of g?.a || []) {
     const a = it.add?.[k];
     if (!a) continue;
-    line(a.t, 'text-pw-blue');
+    const ov = g?.v?.[k];
+    line(ov != null && a.e ? custText({ k: Object.keys(a.e)[0], v: ov }) : a.t, 'text-pw-blue');
     if (a.d) line(a.d, 'pl-2.5 text-xs text-[#c8bfa8]');
   }
   for (const f of it.fix || []) line(f.t, 'text-pw-blue');
