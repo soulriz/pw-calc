@@ -27,7 +27,8 @@ export function GearPanel({ state, R, cat, update, onOpen, ensureItems }: {
   const takeOffAll: MenuItem = { label: 'Зняти весь шмот', onClick: () => update(unequipAll), danger: true };
   return (
     <Panel id="p-gear" title="Екіпіровка" note={`${R.equipped} з ${ACTIVE_SLOTS.length}`}>
-      <div className="relative mx-auto aspect-[324/222] w-full max-w-[486px] rounded-md bg-[url(/ui/bg.png)] bg-[length:100%_100%]">
+      {/* native size of the game window (324×222): 38 px cells with 32 px icons, as in the client */}
+      <div className="relative mx-auto aspect-[324/222] w-full max-w-[324px] rounded-md bg-[url(/ui/bg.png)] bg-[length:100%_100%]">
         <div className="pointer-events-none absolute top-[22.52%] left-[38.58%] h-[67.57%] w-[24.38%] bg-contain bg-center bg-no-repeat"
              style={{ backgroundImage: `url(/ui/figure_${state.sex}.png)` }} />
         {SLOTS.map(s => {
