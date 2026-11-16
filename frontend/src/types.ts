@@ -58,6 +58,8 @@ export interface BuffSkill {
   desc_je?: string;
   eff: Record<string, [string, number]>;
   fx: Record<string, string>;
+  /** class of a debuff's caster (debuff picker filter) */
+  cls?: string;
 }
 
 export interface Meta {

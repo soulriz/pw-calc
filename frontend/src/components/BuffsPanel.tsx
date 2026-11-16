@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { buffOk, buffValue } from '../calc';
 import { BUFF_TYPES } from '../constants';
 import type { BuffLevel, BuffSkill, BuildState, Meta } from '../types';
@@ -74,13 +75,71 @@ export function BuffsPanel({ state, meta, update }: { state: BuildState; meta: M
       <input type="checkbox" checked={allOn(ids)} onChange={e => toggleAll(ids, e.target.checked)} /> {label}
     </label>
   );
+  const activeDebuffs = debuffs.filter(id => state.buffs[id] != null);
   return (
     <Panel id="p-buffs" title="Бафи">
       {head(buffs, 'Бафи')}
       <BuffGrid ids={buffs} state={state} meta={meta} update={update} />
-      <div className="mt-4">{head(debuffs, 'Дебафи')}</div>
-      <BuffGrid ids={debuffs} state={state} meta={meta} update={update} />
-      <p className="mt-3.5 text-sm text-muted">Клік по іконці вмикає баф, під іконкою — рівень. Назви й описи — з клієнта гри, формули — з mypers.world.</p>
+      <div className="mt-4 mb-2 font-bold text-gold">Дебафи</div>
+      <div className="flex flex-wrap items-start gap-x-1.5 gap-y-2">
+        <BuffGrid ids={activeDebuffs} state={state} meta={meta} update={update} />
+        <DebuffPicker ids={debuffs} state={state} meta={meta} update={update} />
+      </div>
+      <p className="mt-3.5 text-sm text-muted">Клік по іконці вмикає / вимикає баф, під іконкою — рівень. Дебаф додається кнопкою «+» (усіх класів, як на mypers.world). Назви й описи — з клієнта гри, формули — з mypers.world.</p>
     </Panel>
+  );
+}
+
+/** "+" slot: list of every class's debuffs with search and class checkboxes; a click puts the debuff on. */
+function DebuffPicker({ ids, state, meta, update }: { ids: string[]; state: BuildState; meta: Meta; update: (fn: (s: BuildState) => BuildState) => void }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState('');
+  const classes = [...new Set(ids.map(id => meta.buffs.skills[id]?.cls).filter(Boolean))] as string[];
+  const [on, setOn] = useState<Set<string>>(() => new Set(classes));
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    window.addEventListener('mousedown', away);
+    return () => window.removeEventListener('mousedown', away);
+  }, [open]);
+  const n = q.trim().toLowerCase();
+  const list = ids.filter(id => {
+    const sk = meta.buffs.skills[id];
+    return sk && state.buffs[id] == null && on.has(sk.cls ?? '') && (!n || sk.name.toLowerCase().includes(n));
+  });
+  return (
+    <div ref={ref} className="relative">
+      <button type="button" aria-label="Додати дебаф" aria-expanded={open} onClick={() => setOpen(o => !o)}
+        className="grid h-[38px] w-[38px] cursor-pointer place-items-center rounded border border-dashed border-line bg-well text-xl text-gold hover:border-line-strong">+</button>
+      {open && (
+        <div className="absolute top-11 left-0 z-40 w-[300px] rounded-md border border-line-strong bg-panel p-2.5 shadow-2xl">
+          <input className="input" type="search" placeholder="Назва дебафу" aria-label="Пошук дебафу" value={q} onChange={e => setQ(e.target.value)} autoFocus />
+          <div className="mt-2 grid grid-cols-2 gap-x-2 gap-y-0.5 text-sm">
+            {classes.map(c => (
+              <label key={c} className="flex items-center gap-1.5">
+                <input type="checkbox" checked={on.has(c)} onChange={e => setOn(s => { const x = new Set(s); if (e.target.checked) x.add(c); else x.delete(c); return x; })} /> {c}
+              </label>
+            ))}
+          </div>
+          <div className="mt-2 grid max-h-64 gap-1 overflow-auto">
+            {list.length === 0 && <span className="text-sm text-muted">Нічого не знайдено</span>}
+            {list.map(id => {
+              const sk = meta.buffs.skills[id];
+              return (
+                <button key={id} type="button" className="flex cursor-pointer items-center gap-2 rounded border border-line bg-panel2 p-1 text-left hover:border-line-strong"
+                  onClick={() => { update(s => ({ ...s, buffs: { ...s.buffs, [id]: buffLv(s, id, sk) } })); setOpen(false); }}>
+                  <img src={'/' + sk.icon} alt="" className="h-8 w-8 flex-none" />
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-bold">{sk.name}</span>
+                    <span className="block text-xs text-muted">{sk.cls}{Object.keys(sk.eff).length ? '' : ' · у статах не рахується'}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
