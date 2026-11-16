@@ -13,12 +13,17 @@ async function send<T>(method: string, url: string, body?: unknown): Promise<T> 
 
 export const api = {
   meta: () => get<Meta>('/api/meta'),
-  items: (p: { slot: string; q?: string; classBit?: number; level: number; take?: number }) => {
+  items: (p: { slot: string; q?: string; classBit?: number; level: number; take?: number; minLvl?: number; maxLvl?: number; sub?: string }) => {
     const qs = new URLSearchParams({ slot: p.slot, level: String(p.level), take: String(p.take ?? 300) });
     if (p.q) qs.set('q', p.q);
     if (p.classBit != null) qs.set('classBit', String(p.classBit));
+    if (p.minLvl != null) qs.set('minLvl', String(p.minLvl));
+    if (p.maxLvl != null) qs.set('maxLvl', String(p.maxLvl));
+    if (p.sub) qs.set('sub', p.sub);
     return get<{ total: number; items: Item[] }>('/api/items?' + qs);
   },
+  subs: (slot: string, classBit?: number) =>
+    get<{ sub: string; count: number }[]>(`/api/items/subs?slot=${slot}` + (classBit != null ? `&classBit=${classBit}` : '')),
   itemsByIds: (ids: string[]) => (ids.length ? get<Item[]>('/api/items/by-ids?ids=' + encodeURIComponent(ids.join(','))) : Promise.resolve([])),
   builds: () => get<{ id: string; name: string; updatedAt: string }[]>('/api/builds'),
   build: (id: string) => get<{ id: string; name: string; data: BuildState }>(`/api/builds/${id}`),

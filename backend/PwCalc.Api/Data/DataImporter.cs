@@ -20,8 +20,10 @@ public static class DataImporter
             return;
         }
 
-        var version = $"{File.GetLastWriteTimeUtc(itemsFile):O}|{File.GetLastWriteTimeUtc(buffsFile):O}";
-        var current = await db.Meta.FindAsync("version");
+        // "v2": items got the Sub column, so older imports load again
+        var version = $"v2|{File.GetLastWriteTimeUtc(itemsFile):O}|{File.GetLastWriteTimeUtc(buffsFile):O}";
+        // untracked: the rows are deleted below and "version" is added again
+        var current = await db.Meta.AsNoTracking().FirstOrDefaultAsync(m => m.Key == "version");
         if (current?.Data == JsonSerializer.Serialize(version)) return;
 
         log.LogInformation("Importing game data from {Dir}", dataDir);
@@ -42,6 +44,7 @@ public static class DataImporter
             {
                 Id = (string)o["id"]!,
                 Slot = (string)o["slot"]!,
+                Sub = (string?)o["sub"] ?? "",
                 Name = (string)o["name"]!,
                 Lvl = (int?)o["lvl"] ?? 0,
                 Grade = (int?)o["gr"] ?? 0,

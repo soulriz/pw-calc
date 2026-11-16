@@ -7,6 +7,8 @@ public class Item
 {
     public string Id { get; set; } = "";
     public string Slot { get; set; } = "";
+    /// <summary>Item sub type from the client ("Важка броня", "Лук"…): the category filter.</summary>
+    public string Sub { get; set; } = "";
     public string Name { get; set; } = "";
     public int Lvl { get; set; }
     public int Grade { get; set; }

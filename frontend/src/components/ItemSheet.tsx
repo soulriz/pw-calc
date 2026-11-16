@@ -27,6 +27,10 @@ export function ItemSheet({ slotId, state, cat, update, remember, onClose }: {
   const it = g && cat.items[g.id];
   const [q, setQ] = useState('');
   const [onlyCls, setOnlyCls] = useState(true);
+  const [minLvl, setMinLvl] = useState('');
+  const [maxLvl, setMaxLvl] = useState('');
+  const [sub, setSub] = useState('');
+  const [subs, setSubs] = useState<{ sub: string; count: number }[]>([]);
   const [list, setList] = useState<Item[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -41,14 +45,21 @@ export function ItemSheet({ slotId, state, cat, update, remember, onClose }: {
     const t = setTimeout(async () => {
       setLoading(true);
       try {
-        const r = await api.items({ slot: slot.type!, q: q.trim() || undefined, classBit: onlyCls ? CLASS_BIT[state.cls] : undefined, level: state.level, take: MAX_ROWS });
+        const lvl = (v: string) => (/^\d+$/.test(v.trim()) ? parseInt(v, 10) : undefined);
+        const r = await api.items({ slot: slot.type!, q: q.trim() || undefined, classBit: onlyCls ? CLASS_BIT[state.cls] : undefined, level: state.level, take: MAX_ROWS,
+          minLvl: lvl(minLvl), maxLvl: lvl(maxLvl), sub: sub || undefined });
         remember(r.items);
         setList(r.items);
         setTotal(r.total);
       } finally { setLoading(false); }
     }, 200);
     return () => clearTimeout(t);
-  }, [q, onlyCls, slot.type, state.cls, state.level, remember]);
+  }, [q, onlyCls, minLvl, maxLvl, sub, slot.type, state.cls, state.level, remember]);
+
+  // categories of the slot (heavy / light / robe, weapon types…) for the filter
+  useEffect(() => {
+    api.subs(slot.type!, onlyCls ? CLASS_BIT[state.cls] : undefined).then(setSubs).catch(() => setSubs([]));
+  }, [slot.type, onlyCls, state.cls]);
 
   const setGear = (fn: (g: Gear) => Gear) => update(s => (s.gear[slotId] ? { ...s, gear: { ...s.gear, [slotId]: fn(s.gear[slotId]) } } : s));
   const choose = (id: string) => update(s => {
@@ -162,6 +173,18 @@ export function ItemSheet({ slotId, state, cat, update, remember, onClose }: {
           {it && <div className="mt-2.5"><button className="btn" onClick={toInventory}>Зняти в інвентар</button></div>}
 
           <h3 className="mt-4.5 font-serif text-xl font-semibold text-gold">Предмети для цього слоту</h3>
+          <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+            <select className="input" aria-label="Категорія" value={sub} onChange={e => setSub(e.target.value)}>
+              <option value="">Усі категорії</option>
+              {subs.map(x => <option key={x.sub} value={x.sub}>{x.sub} ({x.count})</option>)}
+            </select>
+            <div className="flex items-center gap-1.5 text-sm text-muted">
+              <span>Рівень</span>
+              <input className="input w-16" type="number" min={0} placeholder="від" aria-label="Рівень від" value={minLvl} onChange={e => setMinLvl(e.target.value)} />
+              <span>–</span>
+              <input className="input w-16" type="number" min={0} placeholder="до" aria-label="Рівень до" value={maxLvl} onChange={e => setMaxLvl(e.target.value)} />
+            </div>
+          </div>
           <input className="input mt-2" type="search" placeholder="Пошук за назвою" aria-label="Пошук предмета" value={q} onChange={e => setQ(e.target.value)} autoFocus />
           <label className="mt-2 flex items-center gap-2 text-sm text-muted"><input type="checkbox" checked={onlyCls} onChange={e => setOnlyCls(e.target.checked)} /> Лише для мого класу</label>
           <ul className={'mt-2 grid gap-1.5 ' + (loading ? 'opacity-60' : '')}>

@@ -14,6 +14,8 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDb>();
     await db.Database.EnsureCreatedAsync();
+    // EnsureCreated does not add columns to an existing database; builds must survive, so no drop
+    await db.Database.ExecuteSqlRawAsync("ALTER TABLE items ADD COLUMN IF NOT EXISTS \"Sub\" text NOT NULL DEFAULT ''");
     var dataDir = Path.GetFullPath(builder.Configuration["DataDir"] ?? "../../data", app.Environment.ContentRootPath);
     await DataImporter.ImportAsync(db, dataDir, app.Logger);
 }
@@ -48,8 +50,7 @@ api.MapGet("/meta", async (AppDb db) =>
     return Results.Content(sb.ToString(), "application/json; charset=utf-8");
 });
 
-// item list for a slot: class filter, name search; items the character can wear come first (highest level first)
-api.MapGet("/items", async (AppDb db, string slot, string? q, int? classBit, int level = 105, int take = 300) =>
+IQueryable<Item> SlotItems(AppDb db, string slot, int? classBit)
 {
     var query = db.Items.Where(i => i.Slot == slot);
     if (classBit is >= 0 and < 31)
@@ -57,6 +58,21 @@ api.MapGet("/items", async (AppDb db, string slot, string? q, int? classBit, int
         var mask = 1 << classBit.Value;
         query = query.Where(i => i.ClassMask == 0 || (i.ClassMask & mask) != 0);
     }
+    return query;
+}
+
+// categories (sub types) of a slot with item counts, for the filter list
+api.MapGet("/items/subs", async (AppDb db, string slot, int? classBit) =>
+    await SlotItems(db, slot, classBit).Where(i => i.Sub != "").GroupBy(i => i.Sub)
+        .Select(g => new { sub = g.Key, count = g.Count() }).OrderByDescending(x => x.count).ToListAsync());
+
+// item list for a slot: class, level range, category and name filters; items the character can wear come first
+api.MapGet("/items", async (AppDb db, string slot, string? q, int? classBit, int? minLvl, int? maxLvl, string? sub, int level = 105, int take = 300) =>
+{
+    var query = SlotItems(db, slot, classBit);
+    if (minLvl is not null) query = query.Where(i => i.Lvl >= minLvl);
+    if (maxLvl is not null) query = query.Where(i => i.Lvl <= maxLvl);
+    if (!string.IsNullOrEmpty(sub)) query = query.Where(i => i.Sub == sub);
     if (!string.IsNullOrWhiteSpace(q))
         query = query.Where(i => EF.Functions.ILike(i.Name, "%" + q.Trim().Replace("%", "\\%").Replace("_", "\\_") + "%"));
     var total = await query.CountAsync();
