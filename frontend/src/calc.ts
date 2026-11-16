@@ -170,5 +170,6 @@ export function cleanGear(g: Partial<Gear> & { id: string }, it: Item | undefine
   const s = Array.from({ length: n }, (_, k) => (Array.isArray(g.s) && g.s[k] && stones[g.s[k]!] ? g.s[k]! : null));
   const a = Array.isArray(g.a) ? [...new Set(g.a.map(Number))].filter(k => it?.add && k >= 0 && k < it.add.length) : [];
   const c = (Array.isArray(g.c) ? g.c : []).filter(x => x && CUSTOM[x.k] && Number.isFinite(+x.v)).slice(0, 40).map(x => ({ k: x.k, v: +x.v }));
-  return { id: g.id, r: it?.ref ? r : 0, n, s, a, c };
+  const m = typeof g.m === 'string' ? g.m.trim().slice(0, 32) : '';  // crafter's nick (from Clan Dossier)
+  return { id: g.id, r: it?.ref ? r : 0, n, s, a, c, ...(m ? { m } : {}) };
 }

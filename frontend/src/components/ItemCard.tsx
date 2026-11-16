@@ -60,6 +60,7 @@ export function ItemCard({ it, g, state, cat }: { it: Item; g?: Gear; state: Bui
     for (const b of set.b) line(`(${b.k}) ${b.t}`, cnt >= b.k ? 'text-ok' : 'text-[#8a8a8a]');
   }
   if (it.price) line(`Ціна: ${nf(it.price)}`);
+  if (g?.m) line(`Творець: ${g.m}`, 'text-ok');
   if (!classOk(it, state.cls)) line(`Недоступно для класу «${CLASSES[state.cls].name}»`, 'text-bad');
   if (problems(it, state).length) line('Предмет не діє, доки не виконано вимоги.', 'text-bad');
   return <div className="card-game">{L}</div>;

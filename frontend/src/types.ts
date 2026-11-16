@@ -69,7 +69,7 @@ export type StatKey = 'vit' | 'str' | 'int' | 'dex';
 export type BuffLevel = number | 'rs' | 'je';
 
 /** An item as worn or kept: refine, sockets with stones, chosen and custom properties. */
-export interface Gear { id: string; r: number; n: number; s: (string | null)[]; a: number[]; c: { k: string; v: number }[] }
+export interface Gear { id: string; r: number; n: number; s: (string | null)[]; a: number[]; c: { k: string; v: number }[]; m?: string }
 
 export interface BuildState {
   name: string;
