@@ -36,6 +36,9 @@ export interface Item {
   addMax?: number;
   fix?: FixedProp[];
   set?: number;
+  // ammo: weapon grade range it fits (gr..grMax) and the base physical attack it adds
+  grMax?: number;
+  dmg?: number;
 }
 
 export interface StoneSide { t: string; e?: Effect }

@@ -17,8 +17,14 @@ export const custText = (c: { k: string; v: number }) =>
   `${CUSTOM[c.k]} ${c.v >= 0 ? '+' : ''}${dec(c.v, Number.isInteger(c.v) ? 0 : 2)}${/^pct_|^crit/.test(c.k) && !CUSTOM[c.k].endsWith('%') ? '%' : ''}`;
 
 export interface Problem { type: 'class' | 'req'; text?: string }
-export function problems(it: Item, s: BuildState): Problem[] {
+/** items: the catalog, needed to check that ammo fits the worn weapon (type and grade) */
+export function problems(it: Item, s: BuildState, items?: Record<string, Item>): Problem[] {
   const p: Problem[] = [];
+  if (it.slot === 'ammo') {
+    const w = items?.[s.gear.weapon?.id ?? ''];
+    if (!w || w.sub !== it.sub || (w.gr ?? 0) < (it.gr ?? 0) || (w.gr ?? 0) > (it.grMax ?? 99))
+      p.push({ type: 'req', text: `${(it.sub || '').toLowerCase()} ${it.gr}–${it.grMax} рангу` });
+  }
   if (!classOk(it, s.cls)) p.push({ type: 'class' });
   if (it.lvl > s.level) p.push({ type: 'req', text: 'рівень ' + it.lvl });
   for (const k of STAT_KEYS) {
@@ -65,7 +71,7 @@ export function compute(s: BuildState, cat: Catalog): Result {
   const g0 = (k: string) => G[k] || 0;
   const addG = (k: string, v: number) => { G[k] = g0(k) + v; };
   const status: Record<string, Problem[]> = {};
-  let weapon: Item | null = null, wRefP = 0, wRefM = 0, equipped = 0;
+  let weapon: Item | null = null, ammo = 0, wRefP = 0, wRefM = 0, equipped = 0;
   const setCount: Record<string, number> = {};
 
   for (const sl of ACTIVE_SLOTS) {
@@ -73,7 +79,7 @@ export function compute(s: BuildState, cat: Catalog): Result {
     const it = g && cat.items[g.id];
     if (!it) continue;
     equipped++;
-    const probs = problems(it, s);
+    const probs = problems(it, s, cat.items);
     status[sl.id] = probs;
     if (probs.length) continue; // an item works only when its requirements are met
     for (const [k, v] of Object.entries(it.stats || {})) addG(k, v);
@@ -83,6 +89,7 @@ export function compute(s: BuildState, cat: Catalog): Result {
     for (const c of g.c) addG(c.k, c.v);
     if (it.set) setCount[it.set] = (setCount[it.set] || 0) + 1;
     const add = refineAdd(it, g.r);
+    if (it.slot === 'ammo') ammo = it.dmg || 0;
     if (it.slot === 'weapon') {
       weapon = it;
       if (add) { if (it.ref!.stat === 'patk') wRefP = add; else wRefM = add; }
@@ -118,8 +125,8 @@ export function compute(s: BuildState, cat: Catalog): Result {
   const pl = Math.round(L * C.pL);
   const pcut = Math.round(ps / 3);
   const phys = (x: number) => Math.max(1, Math.round(x * pk + pl * pk - ((x + pl) / 100) * pcut));
-  const pmin = phys((w.pmin || 0) + wRefP + g0('patk'));
-  const pmax = phys((w.pmax || 0) + wRefP + g0('patk') + g0('patkMax'));
+  const pmin = phys((w.pmin || 0) + ammo + wRefP + g0('patk'));
+  const pmax = phys((w.pmax || 0) + ammo + wRefP + g0('patk') + g0('patkMax'));
   // magic attack: scaled by intellect
   const mk = 1 + T.int / 100 + P('matk');
   const mExtra = C.magic ? Math.round(T.int / 1720) : 0;

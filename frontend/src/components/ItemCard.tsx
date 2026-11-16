@@ -31,10 +31,14 @@ export function ItemCard({ it, g, state, cat }: { it: Item; g?: Gear; state: Bui
       if (x) line(`Захист від ${nm} +${nf(x)}`);
     }
   }
+  if (it.slot === 'ammo') {
+    line(`Фізична атака зброї +${nf(it.dmg || 0)}`);
+    line(`Для зброї: ${it.sub}, ранг ${it.gr}–${it.grMax}`, problems(it, state, cat.items).length ? 'text-bad' : '');
+  }
   if (it.dur) line(`Міцність ${nf(it.dur)}/${nf(it.dur)}`);
   if (it.cm && it.cm !== 4095)
     line('Обмеження за класом: ' + [0, 1, 3, 4, 6, 7].filter(i => (it.cm >> i) & 1).map(i => CLASS_NAMES[i]).join('  '), classOk(it, state.cls) ? '' : 'text-bad');
-  line(`Необхідний рівень: ${it.lvl}`, state.level >= it.lvl ? '' : 'text-bad');
+  if (it.slot !== 'ammo') line(`Необхідний рівень: ${it.lvl}`, state.level >= it.lvl ? '' : 'text-bad');
   for (const k of ['str', 'dex', 'int', 'vit'] as const) {
     const need = it.req?.[k];
     if (need) line(`${REQ_GAME[k]}: ${nf(need)}`, state.stats[k] >= need ? '' : 'text-bad');
@@ -63,6 +67,6 @@ export function ItemCard({ it, g, state, cat }: { it: Item; g?: Gear; state: Bui
   if (it.price) line(`Ціна: ${nf(it.price)}`);
   if (g?.m) line(`Творець: ${g.m}`, 'text-ok');
   if (!classOk(it, state.cls)) line(`Недоступно для класу «${CLASSES[state.cls].name}»`, 'text-bad');
-  if (problems(it, state).length) line('Предмет не діє, доки не виконано вимоги.', 'text-bad');
+  if (problems(it, state, cat.items).length) line('Предмет не діє, доки не виконано вимоги.', 'text-bad');
   return <div className="card-game">{L}</div>;
 }

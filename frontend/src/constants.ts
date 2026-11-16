@@ -64,13 +64,13 @@ export const SLOTS: SlotDef[] = [
   { id: 'horn', name: 'Ріг', x: 280, y: 66, off: true },
   { id: 'charm', name: 'Оберіг', x: 280, y: 111, off: true },
   { id: 'weapon', type: 'weapon', name: 'Зброя', x: 280, y: 156 },
-  { id: 'ammo', name: 'Боєприпаси', x: 280, y: 201, off: true },
+  { id: 'ammo', type: 'ammo', name: 'Боєприпаси', x: 280, y: 201 },
 ];
 export const ACTIVE_SLOTS = SLOTS.filter(s => !s.off);
 export const SLOT = Object.fromEntries(SLOTS.map(s => [s.id, s])) as Record<string, SlotDef>;
 export const TYPE_NAME: Record<string, string> = {
   helmet: 'Шолом', necklace: 'Намисто', cloak: 'Плащ', belt: 'Пояс', armor: 'Броня', pants: 'Штани', wrists: 'Наручі',
-  boots: 'Взуття', ring: 'Кільце', tome: 'Збірник цитат', book: 'Трактат', weapon: 'Зброя',
+  boots: 'Взуття', ring: 'Кільце', tome: 'Збірник цитат', book: 'Трактат', weapon: 'Зброя', ammo: 'Боєприпаси',
 };
 
 export const RANGED = ['Лук', 'Арбалет', 'Праща']; // physical attack scales with dexterity

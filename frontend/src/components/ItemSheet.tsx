@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import { classOk, problems, stoneSide, type Catalog } from '../calc';
-import { CLASSES, CLASS_BIT, CUSTOM, INV_MAX, SLOT } from '../constants';
+import { CLASSES, CLASS_BIT, CUSTOM, INV_MAX, RANGED, SLOT } from '../constants';
 import { dec, nf, norm } from '../format';
 import type { BuildState, Gear, Item } from '../types';
 import { ItemCard } from './ItemCard';
@@ -10,6 +10,7 @@ import { ItemIcon } from './common';
 const MAX_ROWS = 300;
 
 function summary(it: Item) {
+  if (it.slot === 'ammo') return `Фіз. атака +${nf(it.dmg || 0)}, ранг зброї ${it.gr}–${it.grMax}`;
   if (it.fix) return it.fix.slice(0, 2).map(f => f.t).join(', ');
   if (it.slot === 'weapon')
     return (it.mmax || 0) > (it.pmax || 0) ? `Маг. атака ${nf(it.mmin || 0)}–${nf(it.mmax || 0)}` : `Фіз. атака ${nf(it.pmin || 0)}–${nf(it.pmax || 0)}`;
@@ -29,7 +30,8 @@ export function ItemSheet({ slotId, state, cat, update, remember, onClose }: {
   const [onlyCls, setOnlyCls] = useState(true);
   const [minLvl, setMinLvl] = useState('');
   const [maxLvl, setMaxLvl] = useState('');
-  const [sub, setSub] = useState('');
+  // ammo: start with the kind that fits the worn bow / crossbow / sling
+  const [sub, setSub] = useState(() => slotId === 'ammo' && RANGED.includes(cat.items[state.gear.weapon?.id ?? '']?.sub ?? '') ? cat.items[state.gear.weapon!.id].sub! : '');
   const [subs, setSubs] = useState<{ sub: string; count: number }[]>([]);
   const [list, setList] = useState<Item[]>([]);
   const [total, setTotal] = useState(0);
@@ -208,7 +210,7 @@ export function ItemSheet({ slotId, state, cat, update, remember, onClose }: {
           <label className="mt-2 flex items-center gap-2 text-sm text-muted"><input type="checkbox" checked={onlyCls} onChange={e => setOnlyCls(e.target.checked)} /> Лише для мого класу</label>
           <ul className={'mt-2 grid gap-1.5 ' + (loading ? 'opacity-60' : '')}>
             {list.map(i => {
-              const probs = problems(i, state);
+              const probs = problems(i, state, cat.items);
               const reqs = probs.filter(p => p.type === 'req').map(p => p.text);
               const warn = !classOk(i, state.cls) ? `Недоступно для класу «${C.name}»` : reqs.length ? 'Не вистачає: ' + reqs.join(', ') : '';
               const on = it?.id === i.id;
@@ -219,7 +221,7 @@ export function ItemSheet({ slotId, state, cat, update, remember, onClose }: {
                     <span className="grid h-11 w-11 flex-none place-items-center rounded-md border border-line bg-well"><ItemIcon it={i} className="h-9 w-9" /></span>
                     <span className="min-w-0">
                       <span className="block leading-tight font-bold [text-shadow:0_1px_1px_rgba(0,0,0,.6)]" style={{ color: i.col || '#fff' }}>{i.name}</span>
-                      <span className="block text-sm text-muted">Рівень {i.slot === 'book' ? i.gr : i.lvl}, {summary(i)}</span>
+                      <span className="block text-sm text-muted">{i.slot === 'ammo' ? i.sub : `Рівень ${i.slot === 'book' ? i.gr : i.lvl}`}, {summary(i)}</span>
                       {warn && <span className="block text-sm text-bad">{warn}</span>}
                     </span>
                   </button>
