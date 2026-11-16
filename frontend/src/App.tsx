@@ -8,10 +8,12 @@ import { GearPanel } from './components/GearPanel';
 import { InventoryPanel } from './components/InventoryPanel';
 import { ItemSheet } from './components/ItemSheet';
 import { StatValue, TipProvider } from './components/common';
+import { TabsBar } from './components/TabsBar';
 import { defaults, useCalc } from './store';
 
 export default function App() {
-  const { meta, cat, state, ready, error, update, replace, remember, ensureItems } = useCalc();
+  const { meta, cat, state, ready, error, update, replace, remember, ensureItems,
+          tabs, selectTab, addTab, closeTab, renameTab, setServerId } = useCalc();
   const [sheet, setSheet] = useState<string | null>(null);
   const R = useMemo(() => (cat ? compute(state, cat) : null), [state, cat]);
 
@@ -38,8 +40,10 @@ export default function App() {
             <h1 className="font-serif text-4xl leading-none font-semibold md:text-5xl">Калькулятор персонажа</h1>
             <p className="mt-2 max-w-[56ch] text-sm text-muted">Предмети, камені й комплекти — з клієнта гри, формули — з mypers.world. Збірки можна зберігати на сервері.</p>
           </div>
-          <BuildsMenu state={state} replace={replace} onReset={() => replace(defaults())} />
+          <BuildsMenu state={state} title={tabs.list[tabs.active].title} current={tabs.list[tabs.active].serverId} setCurrent={setServerId}
+            replace={replace} onReset={() => replace(defaults())} />
         </header>
+        <TabsBar tabs={tabs.list} active={tabs.active} onSelect={i => { setSheet(null); selectTab(i); }} onAdd={addTab} onClose={closeTab} onRename={renameTab} />
 
         <main className="flex flex-col gap-4.5 md:grid md:grid-cols-[minmax(0,.95fr)_minmax(0,1.05fr)] md:items-start md:gap-5.5">
           <div className="flex flex-col gap-4.5 md:gap-5.5">

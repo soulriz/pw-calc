@@ -2,24 +2,23 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
 import type { BuildState } from '../types';
 
-const CURRENT_KEY = 'pw-calc-web-current-build';
-
-/** Saved builds in Postgres: save the current one, load or delete others. */
-export function BuildsMenu({ state, replace, onReset }: { state: BuildState; replace: (raw: unknown) => Promise<void>; onReset: () => void }) {
+/** Saved builds in Postgres for the active tab: save it, load another into it, delete. */
+export function BuildsMenu({ state, title, current, setCurrent, replace, onReset }: {
+  state: BuildState; title: string; current: string | null; setCurrent: (id: string | null) => void;
+  replace: (raw: unknown) => Promise<void>; onReset: () => void;
+}) {
   const [list, setList] = useState<{ id: string; name: string; updatedAt: string }[]>([]);
-  const [current, setCurrent] = useState<string | null>(() => { try { return localStorage.getItem(CURRENT_KEY); } catch { return null; } });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [armed, setArmed] = useState(false);
 
   const refresh = useCallback(async () => { try { setList(await api.builds()); } catch { /* server down */ } }, []);
   useEffect(() => { refresh(); }, [refresh]);
-  useEffect(() => { try { if (current) localStorage.setItem(CURRENT_KEY, current); else localStorage.removeItem(CURRENT_KEY); } catch { /* ignore */ } }, [current]);
   useEffect(() => { if (!armed) return; const t = setTimeout(() => setArmed(false), 3000); return () => clearTimeout(t); }, [armed]);
 
   const flash = (t: string) => { setMsg(t); setTimeout(() => setMsg(''), 2500); };
   const run = async (fn: () => Promise<void>) => { setBusy(true); try { await fn(); } catch (e) { flash('Помилка: ' + String(e)); } finally { setBusy(false); } };
-  const name = state.name.trim() || 'Без імені';
+  const name = [state.name.trim() || 'Без імені', title.trim()].filter(Boolean).join(' · ');
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
