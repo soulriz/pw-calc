@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { freePoints, type Output, type Result } from '../calc';
 import { ABBR, CLASSES, CLASS_ICON, MAX_LEVEL, MIN_STAT, STAT_KEYS, STAT_NAME } from '../constants';
 import { dec, nf } from '../format';
@@ -46,7 +46,7 @@ function StepButton({ label, disabled, onStep }: { label: string; disabled: bool
   useEffect(() => { if (disabled) stop(); }, [disabled]);
   return (
     <button type="button" aria-label={label} disabled={disabled}
-      className="h-8 w-8 cursor-pointer select-none rounded-md border border-line bg-panel text-lg text-gold hover:bg-win disabled:cursor-default disabled:opacity-35"
+      className="h-6 w-6 cursor-pointer select-none rounded border border-line bg-panel leading-none text-gold hover:bg-win disabled:cursor-default disabled:opacity-35"
       onPointerDown={e => {
         if (e.button !== 0 || disabled) return;
         e.preventDefault();
@@ -122,25 +122,16 @@ export function CharacterPanel({ state, R, update }: { state: BuildState; R: Res
           <span className="font-serif text-xl font-bold text-gold">Характеристики</span>
         </div>
         {free < 0 && <p className="mb-2 text-sm text-bad">Для {state.level} рівня розподілено забагато. Зменште характеристики на {nf(-free)}.</p>}
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-x-2.5 gap-y-2">
-          {(['vit', 'int', 'str', 'dex'] as StatKey[]).map(k => {
-            const bonus = R.G[k] || 0;
-            return (
-              <div key={k} className="flex items-center gap-1">
-                <label htmlFor={'st-' + k} className="w-9 flex-none font-bold text-gold" title={STAT_NAME[k]}>{ABBR[k]}</label>
-                {/* base points as in the game window; the gear bonus and the total follow in green */}
-                <input id={'st-' + k} type="number" min={MIN_STAT} aria-label={STAT_NAME[k]} value={state.stats[k]}
-                  className="h-8 w-11 flex-none border-0 border-b border-line bg-transparent text-center font-bold focus:border-line-strong focus:bg-well focus:outline-none"
-                  onFocus={e => e.target.select()}
-                  onChange={e => { const v = parseInt(e.target.value, 10); if (!Number.isNaN(v) && v >= MIN_STAT) setStat(k, v); }} />
-                <span className="min-w-[4.5rem] text-sm font-bold whitespace-nowrap text-ok" title={bonus ? `Від екіпіровки ${bonus > 0 ? '+' : ''}${bonus}` : ''}>
-                  {bonus ? `${bonus > 0 ? '+' : '−'}${Math.abs(bonus)} (${state.stats[k] + bonus})` : ''}
-                </span>
-                <StepButton label={'Збільшити: ' + STAT_NAME[k]} disabled={free <= 0} onStep={n => setStat(k, state.stats[k] + n)} />
-                <StepButton label={'Зменшити: ' + STAT_NAME[k]} disabled={state.stats[k] <= MIN_STAT} onStep={n => setStat(k, state.stats[k] - n)} />
-              </div>
-            );
-          })}
+        {/* as in the game window: total with gear in green, two columns, small +/- */}
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+          {(['vit', 'int', 'str', 'dex'] as StatKey[]).map(k => (
+            <div key={k} className="flex items-center gap-1">
+              <label htmlFor={'st-' + k} className="w-9 flex-none font-bold text-gold" title={STAT_NAME[k]}>{ABBR[k]}</label>
+              <StatField id={'st-' + k} label={STAT_NAME[k]} base={state.stats[k]} bonus={R.G[k] || 0} onSet={v => setStat(k, v)} />
+              <StepButton label={'Збільшити: ' + STAT_NAME[k]} disabled={free <= 0} onStep={n => setStat(k, state.stats[k] + n)} />
+              <StepButton label={'Зменшити: ' + STAT_NAME[k]} disabled={state.stats[k] <= MIN_STAT} onStep={n => setStat(k, state.stats[k] - n)} />
+            </div>
+          ))}
         </div>
         <div className="mt-3 flex flex-wrap justify-end gap-2">
           <button className="btn" onClick={() => update(s => ({ ...s, stats: { vit: MIN_STAT, str: MIN_STAT, int: MIN_STAT, dex: MIN_STAT } }))}>Обнулити</button>
@@ -155,5 +146,19 @@ export function CharacterPanel({ state, R, update }: { state: BuildState; R: Res
         {table(ELEMENTS)}
       </div>
     </Panel>
+  );
+}
+
+/** Shows the total (base + gear, green when gear adds); while focused it edits the base points. */
+function StatField({ id, label, base, bonus, onSet }: { id: string; label: string; base: number; bonus: number; onSet: (v: number) => void }) {
+  const [edit, setEdit] = useState(false);
+  return (
+    <input id={id} type="number" min={MIN_STAT} aria-label={label} value={edit ? base : base + bonus}
+      title={bonus ? `${base} очок ${bonus > 0 ? '+' : '−'} ${Math.abs(bonus)} від екіпіровки` : ''}
+      className={'h-7 w-14 flex-none border-0 border-b border-line bg-transparent text-center font-bold focus:border-line-strong focus:bg-well focus:text-text focus:outline-none '
+        + (bonus > 0 ? 'text-ok' : bonus < 0 ? 'text-bad' : '')}
+      onFocus={e => { setEdit(true); const t = e.target; requestAnimationFrame(() => t.select()); }}
+      onBlur={() => setEdit(false)}
+      onChange={e => { const v = parseInt(e.target.value, 10); if (!Number.isNaN(v) && v >= MIN_STAT) onSet(v); }} />
   );
 }
