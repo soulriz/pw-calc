@@ -90,7 +90,7 @@ export function CharacterPanel({ state, R, update }: { state: BuildState; R: Res
     <Panel id="p-char" title={<span className="block text-center">Персонаж</span>} className="bg-gradient-to-b from-[#2b2117] to-[#1a130c] [--color-line:#5a4526]">
       <div className="grid grid-cols-[92px_minmax(0,1fr)] gap-3.5">
         <div>
-          <div className="grid h-[106px] w-[92px] place-items-center rounded-md border border-line-strong bg-[radial-gradient(circle_at_50%_38%,#3b2d1c,#140f0a_78%)]"><img src={classIcon(state.cls)} alt={C.name} className="pixel h-[72px] w-[72px]" /></div>
+          <div className="grid h-[106px] w-[92px] place-items-center rounded-md border border-line-strong bg-[radial-gradient(circle_at_50%_38%,#3b2d1c,#140f0a_78%)]"><img src={classIcon(state.cls)} alt={C.name} className="h-[72px] w-[72px]" /></div>
           <div className="mt-1.5 whitespace-nowrap text-center text-sm text-gold">Рів. {state.level} {C.name}</div>
         </div>
         <div>
@@ -103,8 +103,8 @@ export function CharacterPanel({ state, R, update }: { state: BuildState; R: Res
               {Object.entries(CLASSES).map(([id, c]) => (
                 <button key={id} type="button" role="radio" aria-checked={state.cls === id} title={c.name} aria-label={c.name}
                   onClick={() => update(s => ({ ...s, cls: id }))}
-                  className={'cursor-pointer rounded-full p-px ' + (state.cls === id ? 'ring-2 ring-gold' : 'opacity-55 hover:opacity-100')}>
-                  <img src={classIcon(id)} alt="" className="block h-[30px] w-[30px]" />
+                  className="group cursor-pointer rounded-full">
+                  <img src={classIcon(id, state.cls !== id)} alt="" className="block h-[34px] w-[34px] group-hover:brightness-125" />
                 </button>
               ))}
             </div>
