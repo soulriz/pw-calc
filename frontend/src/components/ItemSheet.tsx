@@ -122,7 +122,7 @@ export function ItemSheet({ slotId, state, cat, update, remember, onClose }: {
                   const st = sid ? cat.stones[sid] : undefined;
                   return (
                     <div key={k} className="grid grid-cols-[26px_minmax(0,1fr)] items-center gap-2">
-                      {st ? <img src={'/' + st.img} alt="" className="pixel h-[26px] w-[26px] rounded-[3px]" /> : <span className="h-[26px] w-[26px] rounded-[3px] border border-dashed border-line" />}
+                      {st ? <img src={import.meta.env.BASE_URL + st.img} alt="" className="pixel h-[26px] w-[26px] rounded-[3px]" /> : <span className="h-[26px] w-[26px] rounded-[3px] border border-dashed border-line" />}
                       <select className="input" aria-label={`Осередок ${k + 1}`} value={sid ?? ''}
                         onChange={e => { const v = cat.stones[e.target.value] ? e.target.value : null; setGear(x => ({ ...x, s: fillAll ? x.s.map(() => v) : x.s.map((y, i) => (i === k ? v : y)) })); }}>
                         <option value="">Порожньо</option>

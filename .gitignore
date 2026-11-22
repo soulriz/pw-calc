@@ -1,5 +1,6 @@
 node_modules/
 frontend/dist/
+frontend/dist-static/
 bin/
 obj/
 backend/PwCalc.Api/wwwroot/

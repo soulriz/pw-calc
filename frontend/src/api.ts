@@ -1,4 +1,5 @@
 import type { BuildState, Item, Meta } from './types';
+import { api as staticApi } from './api.static';
 
 async function get<T>(url: string): Promise<T> {
   const r = await fetch(url);
@@ -11,7 +12,7 @@ async function send<T>(method: string, url: string, body?: unknown): Promise<T> 
   return (r.status === 204 ? undefined : await r.json()) as T;
 }
 
-export const api = {
+const serverApi = {
   meta: () => get<Meta>('/api/meta'),
   items: (p: { slot: string; q?: string; classBit?: number; level: number; take?: number; minLvl?: number; maxLvl?: number; sub?: string }) => {
     const qs = new URLSearchParams({ slot: p.slot, level: String(p.level), take: String(p.take ?? 300) });
@@ -31,3 +32,6 @@ export const api = {
   updateBuild: (id: string, name: string, data: BuildState) => send<{ id: string; name: string }>('PUT', `/api/builds/${id}`, { name, data }),
   deleteBuild: (id: string) => send<void>('DELETE', `/api/builds/${id}`),
 };
+
+// `vite build --mode static` (GitHub Pages): JSON files + localStorage instead of the server; the other one is dropped from the bundle
+export const api: typeof serverApi = import.meta.env.VITE_STATIC ? staticApi : serverApi;

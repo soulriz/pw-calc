@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:static": "tsc -b && vite build --mode static --outDir dist-static && node scripts/export-static.mjs dist-static",
+    "preview:static": "vite preview --mode static --outDir dist-static",
     "preview": "vite preview"
   },
   "dependencies": {

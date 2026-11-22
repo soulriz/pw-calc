@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
 import type { BuildState } from '../types';
 
-/** Saved builds in Postgres for the active tab: save it, load another into it, delete. */
+/** Saved builds (Postgres, or localStorage on the static site) for the active tab: save, load, delete, export / import a JSON file. */
 export function BuildsMenu({ state, title, current, setCurrent, replace, onReset }: {
   state: BuildState; title: string; current: string | null; setCurrent: (id: string | null) => void;
   replace: (raw: unknown) => Promise<void>; onReset: () => void;
@@ -20,6 +20,25 @@ export function BuildsMenu({ state, title, current, setCurrent, replace, onReset
   const run = async (fn: () => Promise<void>) => { setBusy(true); try { await fn(); } catch (e) { flash('Помилка: ' + String(e)); } finally { setBusy(false); } };
   const name = [state.name.trim() || 'Без імені', title.trim()].filter(Boolean).join(' · ');
 
+  // file backup: all saved builds as [{ name, data }]; import adds them as new saved builds
+  const exportAll = () => run(async () => {
+    const all = await Promise.all(list.map(b => api.build(b.id).then(x => ({ name: x.name, data: x.data }))));
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(all.length ? all : [{ name, data: state }], null, 1)], { type: 'application/json' }));
+    a.download = 'pw-calc-builds.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+  const importFile = (f: File) => run(async () => {
+    const raw: unknown = JSON.parse(await f.text());
+    const arr = (Array.isArray(raw) ? raw : [raw]).filter((b): b is { name: string; data: BuildState } =>
+      !!b && typeof b === 'object' && typeof (b as { name?: unknown }).name === 'string' && typeof (b as { data?: unknown }).data === 'object');
+    if (!arr.length) throw new Error('у файлі немає збірок');
+    for (const b of arr) await api.createBuild(b.name, b.data);
+    await refresh();
+    flash(`Імпортовано: ${arr.length}`);
+  });
+
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
       <select className="input w-auto max-w-56" aria-label="Збережені збірки" value={current ?? ''} disabled={busy}
@@ -32,9 +51,13 @@ export function BuildsMenu({ state, title, current, setCurrent, replace, onReset
         else setCurrent((await api.createBuild(name, state)).id);
         await refresh();
         flash('Збережено');
-      })}>{current ? 'Зберегти' : 'Зберегти на сервері'}</button>
+      })}>{current || import.meta.env.VITE_STATIC ? 'Зберегти' : 'Зберегти на сервері'}</button>
       {current && <button className="btn" disabled={busy} onClick={() => run(async () => { setCurrent((await api.createBuild(name, state)).id); await refresh(); flash('Збережено як нову'); })}>Як нову</button>}
       {current && <button className="btn" disabled={busy} onClick={() => run(async () => { await api.deleteBuild(current); setCurrent(null); await refresh(); flash('Видалено'); })}>Видалити</button>}
+      <button className="btn" disabled={busy} title="Усі збережені збірки у файл .json" onClick={exportAll}>Експорт</button>
+      <label className={'btn cursor-pointer ' + (busy ? 'pointer-events-none opacity-50' : '')} title="Додати збірки з файлу .json">
+        Імпорт<input type="file" accept=".json,application/json" className="hidden" onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) importFile(f); }} />
+      </label>
       <button className={'btn ' + (armed ? 'border-bad text-bad' : '')} onClick={() => { if (!armed) { setArmed(true); return; } setArmed(false); setCurrent(null); onReset(); }}>
         {armed ? 'Точно скинути?' : 'Скинути все'}
       </button>

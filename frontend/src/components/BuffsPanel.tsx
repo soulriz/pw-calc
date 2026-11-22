@@ -42,7 +42,7 @@ function BuffGrid({ ids, state, meta, update }: { ids: string[]; state: BuildSta
               })}
               onPointerEnter={e => tip.show(e.currentTarget, <BuffCard sk={sk} lv={lv} />)}
               onPointerLeave={tip.hide}>
-              <img src={'/' + sk.icon} alt="" className={'block h-[32px] w-[32px] ' + (on ? '' : 'brightness-75 grayscale-[.85]')} />
+              <img src={import.meta.env.BASE_URL + sk.icon} alt="" className={'block h-[32px] w-[32px] ' + (on ? '' : 'brightness-75 grayscale-[.85]')} />
             </button>
             <select aria-label={'Рівень: ' + sk.name} value={String(lv)}
               className="min-h-6 w-[46px] rounded border border-line bg-panel2 px-0.5 text-xs text-text"
@@ -129,7 +129,7 @@ function DebuffPicker({ ids, state, meta, update }: { ids: string[]; state: Buil
               return (
                 <button key={id} type="button" className="flex cursor-pointer items-center gap-2 rounded border border-line bg-panel2 p-1 text-left hover:border-line-strong"
                   onClick={() => { update(s => ({ ...s, buffs: { ...s.buffs, [id]: buffLv(s, id, sk) } })); setOpen(false); }}>
-                  <img src={'/' + sk.icon} alt="" className="h-[32px] w-[32px] flex-none" />
+                  <img src={import.meta.env.BASE_URL + sk.icon} alt="" className="h-[32px] w-[32px] flex-none" />
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-bold">{sk.name}</span>
                     <span className="block text-xs text-muted">{sk.cls}{Object.keys(sk.eff).length ? '' : ' · у статах не рахується'}</span>

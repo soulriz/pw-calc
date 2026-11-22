@@ -15,13 +15,13 @@ type Raw = Record<string, unknown> & { clan?: string };
 type Pvp = { format: string; teams: Raw[][] };
 
 async function loadTeams(): Promise<{ format: string; teams: Raw[][] }> {
-  const r = await fetch('/mock/pvp_teams.json', { cache: 'no-store' }).catch(() => null);
+  const r = await fetch(import.meta.env.BASE_URL + 'mock/pvp_teams.json', { cache: 'no-store' }).catch(() => null);
   const pvp: Pvp | null = r?.ok && (r.headers.get('content-type') || '').includes('json') ? await r.json() : null;
   if (pvp && pvp.teams.some(t => t.length)) {
     const size = parseInt(pvp.format, 10) || 3;
     return { format: pvp.format, teams: pvp.teams.slice(0, 2).map(t => t.slice(0, size)) };
   }
-  const raw: Raw[] = await Promise.all(FILES.map(f => fetch(`/mock/${f}.json`).then(x => x.json())));
+  const raw: Raw[] = await Promise.all(FILES.map(f => fetch(`${import.meta.env.BASE_URL}mock/${f}.json`).then(x => x.json())));
   return { format: '3x3', teams: TEAMS.map(t => t.map(j => raw[j])) };
 }
 
@@ -38,12 +38,12 @@ function Doll({ s, cat, clan }: { s: BuildState; cat: Catalog; clan?: string }) 
       </div>
       <div className="relative h-[222px] w-[324px] bg-[url(/ui/bg.png)] bg-[length:100%_100%]">
         <div className="pointer-events-none absolute top-[50px] left-[125px] h-[150px] w-[79px] bg-contain bg-center bg-no-repeat"
-             style={{ backgroundImage: `url(/ui/figure_${s.sex}.png)` }} />
+             style={{ backgroundImage: `url(${import.meta.env.BASE_URL}ui/figure_${s.sex}.png)` }} />
         {SLOTS.map(sl => {
           const g = s.gear[sl.id], it = g && cat.items[g.id];
           return (
             <div key={sl.id} className={'absolute h-[38px] w-[38px] rounded-[3px] bg-[length:100%_100%] ' + (sl.off ? 'opacity-60' : '')}
-              style={{ left: sl.x - 5, top: sl.y - 30, backgroundImage: `url(/ui/slot_${sl.img || sl.id}.png)`, boxShadow: it?.col ? `inset 0 0 0 1px ${it.col}` : undefined }}
+              style={{ left: sl.x - 5, top: sl.y - 30, backgroundImage: `url(${import.meta.env.BASE_URL}ui/slot_${sl.img || sl.id}.png)`, boxShadow: it?.col ? `inset 0 0 0 1px ${it.col}` : undefined }}
               aria-label={`${sl.title || sl.name}: ${it ? it.name + (g.r ? ' +' + g.r : '') : 'порожньо'}`}
               onPointerEnter={e => { if (it) tip.show(e.currentTarget, <ItemCard it={it} g={g} state={s} cat={cat} />); }}
               onPointerLeave={tip.hide}>

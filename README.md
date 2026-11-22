@@ -52,3 +52,33 @@ cd frontend && npm run build
 Після оновлення клієнта перегенерувати дані скриптами з `calc_data/tools` (extract.py, build_calc.py, build_buffs.py),
 скопіювати `calc_data/items_calc.js` і `calc_data/buffs_calc.js` у `data/` та перезапустити backend — імпорт пройде сам.
 Іконки: скопіювати `calc_data/icons` і `calc_data/ui` у `frontend/public/`.
+
+## Статичний сайт (GitHub Pages, без сервера)
+
+Той самий фронтенд, зібраний у режимі `static`: замість API — JSON-файли, збірки — у localStorage браузера
+(кнопки «Експорт» / «Імпорт» зберігають їх у файл `.json` і відновлюють).
+
+```
+cd frontend
+npm run build:static     # → frontend/dist-static (сайт + data/meta.json, data/ids.json, data/items/<слот>.json)
+npm run preview:static   # перегляд на http://localhost:4173
+```
+
+- `src/api.static.ts` — та сама `api`, що й `src/api.ts`, але з файлів; вибирається через `VITE_STATIC` (`.env.static`).
+- `scripts/export-static.mjs` — ділить `data/items_calc.js` на файли по слотах: при відкритті сторінки вантажиться
+  ~110 КБ (gzip), файл слоту — лише коли відкриваєш цей слот (зброя ~220 КБ gzip). Іконки браузер бере по одній, коли їх видно.
+- `base: './'` — сайт працює з будь-якої адреси, зокрема `https://<акаунт>.github.io/<репозиторій>/`.
+
+### Публікація
+
+1. Створити репозиторій на GitHub (наприклад `pw-calc`) і запушити цю папку (`calc_web`):
+   ```
+   git remote add origin https://github.com/<акаунт>/pw-calc.git
+   git push -u origin static-site
+   ```
+2. У репозиторії: Settings → Pages → Source: **GitHub Actions**.
+3. Workflow `.github/workflows/pages.yml` збирає сайт при кожному push у `main` або `static-site`
+   (вкладка Actions; також можна запустити вручну). Адреса: `https://<акаунт>.github.io/pw-calc/`.
+4. Оновити дані: перегенерувати `data/items_calc.js` / `buffs_calc.js` (calc_data/tools), закомітити, запушити.
+
+Іконки й дані предметів витягнуто з клієнта гри — публічний репозиторій і сайт роздають їх усім.

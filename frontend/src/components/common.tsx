@@ -4,7 +4,7 @@ import type { Item } from '../types';
 
 /** Item icon from the client atlas (public/icons). */
 export const ItemIcon = ({ it, className = '' }: { it: Pick<Item, 'img'>; className?: string }) =>
-  <img src={'/' + it.img} alt="" loading="lazy" className={'pixel block ' + className} />;
+  <img src={import.meta.env.BASE_URL + it.img} alt="" loading="lazy" className={'pixel block ' + className} />;
 
 // ---------- hover tooltip ----------
 interface TipApi { show: (el: HTMLElement, content: ReactNode) => void; hide: () => void }

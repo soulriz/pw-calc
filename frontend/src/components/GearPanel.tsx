@@ -30,7 +30,7 @@ export function GearPanel({ state, R, cat, update, onOpen, ensureItems }: {
       {/* native size of the game window (324×222): 38 px cells with 32 px icons, as in the client */}
       <div className="relative mx-auto aspect-[324/222] w-full max-w-[324px] rounded-md bg-[url(/ui/bg.png)] bg-[length:100%_100%]">
         <div className="pointer-events-none absolute top-[22.52%] left-[38.58%] h-[67.57%] w-[24.38%] bg-contain bg-center bg-no-repeat"
-             style={{ backgroundImage: `url(/ui/figure_${state.sex}.png)` }} />
+             style={{ backgroundImage: `url(${import.meta.env.BASE_URL}ui/figure_${state.sex}.png)` }} />
         {SLOTS.map(s => {
           const g = state.gear[s.id];
           const it = g && cat.items[g.id];
@@ -39,7 +39,7 @@ export function GearPanel({ state, R, cat, update, onOpen, ensureItems }: {
             <button key={s.id} type="button" disabled={s.off}
               className={'absolute h-[17.12%] w-[11.73%] rounded-[3px] bg-[length:100%_100%] bg-center enabled:cursor-pointer enabled:hover:brightness-125 disabled:opacity-70 ' +
                 (bad ? 'after:absolute after:inset-px after:rounded-[3px] after:border-2 after:border-bad' : '')}
-              style={{ left: ((s.x - 5) / 324 * 100).toFixed(2) + '%', top: ((s.y - 30) / 222 * 100).toFixed(2) + '%', backgroundImage: `url(/ui/slot_${s.img || s.id}.png)` }}
+              style={{ left: ((s.x - 5) / 324 * 100).toFixed(2) + '%', top: ((s.y - 30) / 222 * 100).toFixed(2) + '%', backgroundImage: `url(${import.meta.env.BASE_URL}ui/slot_${s.img || s.id}.png)` }}
               title={s.off ? `${s.name}: поки без даних` : it ? undefined : s.title || s.name}
               aria-label={`${s.title || s.name}: ${it ? it.name + (g.r ? ' +' + g.r : '') + (bad ? ', не діє' : '') : 'порожньо'}`}
               onClick={() => onOpen(s.id)}
