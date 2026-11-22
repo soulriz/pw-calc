@@ -2,6 +2,23 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
 import type { BuildState } from '../types';
 
+type Obj = Record<string, unknown>;
+const isObj = (v: unknown): v is Obj => !!v && typeof v === 'object' && !Array.isArray(v);
+const isBuild = (v: unknown): v is BuildState => isObj(v) && ('gear' in v || 'cls' in v || 'stats' in v);
+
+/** Builds from an imported file: our export [{ name, data }], { builds: [...] }, the tabs from localStorage
+ *  ({ list: [{ title, build }] }) or a bare build state; anything else is skipped. */
+function toBuilds(raw: unknown, fallback: string): { name: string; data: BuildState }[] {
+  if (Array.isArray(raw)) return raw.flatMap(x => toBuilds(x, fallback));
+  if (!isObj(raw)) return [];
+  if (Array.isArray(raw.builds)) return toBuilds(raw.builds, fallback);
+  if (Array.isArray(raw.list)) return raw.list.flatMap(t => isObj(t) && isBuild(t.build)
+    ? [{ name: String(t.build.name || t.title || fallback), data: t.build }] : []);
+  if (isBuild(raw.data)) return [{ name: String(raw.name || raw.data.name || fallback), data: raw.data }];
+  if (isBuild(raw)) return [{ name: String(raw.name || fallback), data: raw }];
+  return [];
+}
+
 /** Saved builds (Postgres, or localStorage on the static site) for the active tab: save, load, delete, export / import a JSON file. */
 export function BuildsMenu({ state, title, current, setCurrent, replace, onReset }: {
   state: BuildState; title: string; current: string | null; setCurrent: (id: string | null) => void;
@@ -30,10 +47,10 @@ export function BuildsMenu({ state, title, current, setCurrent, replace, onReset
     URL.revokeObjectURL(a.href);
   });
   const importFile = (f: File) => run(async () => {
-    const raw: unknown = JSON.parse(await f.text());
-    const arr = (Array.isArray(raw) ? raw : [raw]).filter((b): b is { name: string; data: BuildState } =>
-      !!b && typeof b === 'object' && typeof (b as { name?: unknown }).name === 'string' && typeof (b as { data?: unknown }).data === 'object');
-    if (!arr.length) throw new Error('у файлі немає збірок');
+    let raw: unknown;
+    try { raw = JSON.parse((await f.text()).replace(/^﻿/, '')); } catch { throw new Error(`«${f.name}» — не JSON-файл`); }
+    const arr = toBuilds(raw, f.name.replace(/\.json$/i, ''));
+    if (!arr.length) throw new Error(`у «${f.name}» немає збірок калькулятора`);
     for (const b of arr) await api.createBuild(b.name, b.data);
     await refresh();
     flash(`Імпортовано: ${arr.length}`);
