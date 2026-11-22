@@ -1,3 +1,4 @@
+import { Board } from './components/Board';
 import { useEffect, useMemo, useState } from 'react';
 import { compute } from './calc';
 import { CLASSES } from './constants';
@@ -45,16 +46,12 @@ export default function App() {
         </header>
         <TabsBar tabs={tabs.list} active={tabs.active} onSelect={i => { setSheet(null); selectTab(i); }} onAdd={addTab} onClose={closeTab} onRename={renameTab} />
 
-        <main className="flex flex-col gap-4.5 md:grid md:grid-cols-[minmax(0,.95fr)_minmax(0,1.05fr)] md:items-start md:gap-5.5">
-          <div className="flex flex-col gap-4.5 md:gap-5.5">
-            <CharacterPanel state={state} R={R} update={update} />
-          </div>
-          <div className="flex flex-col gap-4.5 md:gap-5.5">
-            <GearPanel state={state} R={R} cat={cat} update={update} onOpen={setSheet} ensureItems={ensureItems} />
-            <InventoryPanel state={state} cat={cat} update={update} onOpen={setSheet} ensureItems={ensureItems} />
-            <BuffsPanel state={state} meta={meta} update={update} />
-          </div>
-        </main>
+        <Board def={[['char'], ['gear', 'inv', 'buffs']]} panels={{
+          char: <CharacterPanel state={state} R={R} update={update} />,
+          gear: <GearPanel state={state} R={R} cat={cat} update={update} onOpen={setSheet} ensureItems={ensureItems} />,
+          inv: <InventoryPanel state={state} cat={cat} update={update} onOpen={setSheet} ensureItems={ensureItems} />,
+          buffs: <BuffsPanel state={state} meta={meta} update={update} />,
+        }} />
         <p className="mt-5.5 max-w-[70ch] text-sm text-muted">Камені, вибрані й свої властивості враховуються, якщо для них є відповідна характеристика. Вміння предметів спрацьовують із шансом і в статах не враховуються.</p>
       </div>
 
