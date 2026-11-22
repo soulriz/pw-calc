@@ -71,10 +71,10 @@ npm run preview:static   # перегляд на http://localhost:4173
 
 ### Публікація
 
-1. Створити репозиторій на GitHub (наприклад `pw-calc`) і запушити цю папку (`calc_web`):
+1. Опубліковано: https://github.com/soulriz/pw-calc → https://soulriz.github.io/pw-calc/ . Для нового репозиторію — створити його на GitHub і запушити цю папку (`calc_web`):
    ```
    git remote add origin https://github.com/<акаунт>/pw-calc.git
-   git push -u origin static-site
+   git push origin static-site:main
    ```
 2. У репозиторії: Settings → Pages → Source: **GitHub Actions**.
 3. Workflow `.github/workflows/pages.yml` збирає сайт при кожному push у `main` або `static-site`
