@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { buffOk, buffValue } from '../calc';
-import { BUFF_TYPES } from '../constants';
+import { BUFF_TYPES, classIcon } from '../constants';
 import type { BuffLevel, BuffSkill, BuildState, Meta } from '../types';
 import { Panel, useTip } from './common';
 
@@ -118,7 +118,8 @@ function DebuffPicker({ ids, state, meta, update }: { ids: string[]; state: Buil
           <div className="mt-2 grid grid-cols-2 gap-x-2 gap-y-0.5 text-sm">
             {classes.map(c => (
               <label key={c} className="flex items-center gap-1.5">
-                <input type="checkbox" checked={on.has(c)} onChange={e => setOn(s => { const x = new Set(s); if (e.target.checked) x.add(c); else x.delete(c); return x; })} /> {c}
+                <input type="checkbox" checked={on.has(c)} onChange={e => setOn(s => { const x = new Set(s); if (e.target.checked) x.add(c); else x.delete(c); return x; })} />
+                {classIcon(c) && <img src={classIcon(c)} alt="" className="h-[18px] w-[18px]" />} {c}
               </label>
             ))}
           </div>

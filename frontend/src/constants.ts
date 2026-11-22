@@ -35,7 +35,11 @@ export const CLASSES: Record<string, ClassDef> = {
 // bit of each class in the item class mask (order of professions in the client)
 export const CLASS_BIT: Record<string, number> = { warrior: 0, mage: 1, druid: 3, beast: 4, archer: 6, priest: 7 };
 export const CLASS_NAMES = ['Воїн', 'Чарівник', 'Шаман', 'Друїд', 'Перевертень', 'Вбивця', 'Лучник', 'Жрець', 'Страж', 'Містик', 'Примара', 'Жнець'];
-export const CLASS_ICON: Record<string, string> = { warrior: '🪓', mage: '🔥', archer: '🏹', priest: '✨', beast: '🐯', druid: '🦊' };
+/** class emblem from the client (public/ui/cls, 36×36); by class id or by its Ukrainian name, undefined for classes without one */
+export const classIcon = (idOrName: string): string | undefined => {
+  const id = idOrName in CLASSES ? idOrName : Object.keys(CLASSES).find(k => CLASSES[k].name === idOrName);
+  return id ? `${import.meta.env.BASE_URL}ui/cls/${id}.png` : undefined;
+};
 
 export interface SlotDef { id: string; type?: string; name: string; title?: string; x: number; y: number; off?: boolean; img?: string }
 

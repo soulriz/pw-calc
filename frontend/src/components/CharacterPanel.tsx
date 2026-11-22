@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { freePoints, type Output, type Result } from '../calc';
-import { ABBR, CLASSES, CLASS_ICON, MAX_LEVEL, MIN_STAT, STAT_KEYS, STAT_NAME } from '../constants';
+import { ABBR, CLASSES, classIcon, MAX_LEVEL, MIN_STAT, STAT_KEYS, STAT_NAME } from '../constants';
 import { dec, nf } from '../format';
 import type { BuildState, StatKey } from '../types';
 import { Panel, StatValue } from './common';
@@ -90,19 +90,25 @@ export function CharacterPanel({ state, R, update }: { state: BuildState; R: Res
     <Panel id="p-char" title={<span className="block text-center">Персонаж</span>} className="bg-gradient-to-b from-[#2b2117] to-[#1a130c] [--color-line:#5a4526]">
       <div className="grid grid-cols-[92px_minmax(0,1fr)] gap-3.5">
         <div>
-          <div className="grid h-[106px] w-[92px] place-items-center rounded-md border border-line-strong bg-[radial-gradient(circle_at_50%_38%,#3b2d1c,#140f0a_78%)] text-5xl">{CLASS_ICON[state.cls]}</div>
+          <div className="grid h-[106px] w-[92px] place-items-center rounded-md border border-line-strong bg-[radial-gradient(circle_at_50%_38%,#3b2d1c,#140f0a_78%)]"><img src={classIcon(state.cls)} alt={C.name} className="pixel h-[72px] w-[72px]" /></div>
           <div className="mt-1.5 whitespace-nowrap text-center text-sm text-gold">Рів. {state.level} {C.name}</div>
         </div>
         <div>
           <input className="mb-1 block w-full border-b border-transparent bg-transparent pb-1 text-center font-serif text-2xl font-bold text-gold placeholder:text-gold/60 hover:border-line focus:border-line-strong focus:outline-none"
             maxLength={24} placeholder="Без імені" aria-label="Ім’я персонажа" value={state.name}
             onChange={e => update(s => ({ ...s, name: e.target.value.slice(0, 24) }))} />
-          <label className="mt-1.5 grid grid-cols-[58px_minmax(0,1fr)] items-center gap-2">
-            <span className="text-gold">Клас</span>
-            <select className="input" value={state.cls} onChange={e => update(s => ({ ...s, cls: e.target.value }))}>
-              {Object.entries(CLASSES).map(([id, c]) => <option key={id} value={id}>{c.name}</option>)}
-            </select>
-          </label>
+          <div className="mt-1.5 grid grid-cols-[58px_minmax(0,1fr)] items-center gap-2">
+            <span className="text-gold" id="cls-label">Клас</span>
+            <div role="radiogroup" aria-labelledby="cls-label" className="flex flex-wrap gap-1">
+              {Object.entries(CLASSES).map(([id, c]) => (
+                <button key={id} type="button" role="radio" aria-checked={state.cls === id} title={c.name} aria-label={c.name}
+                  onClick={() => update(s => ({ ...s, cls: id }))}
+                  className={'cursor-pointer rounded-full p-px ' + (state.cls === id ? 'ring-2 ring-gold' : 'opacity-55 hover:opacity-100')}>
+                  <img src={classIcon(id)} alt="" className="block h-[30px] w-[30px]" />
+                </button>
+              ))}
+            </div>
+          </div>
           <label className="mt-1.5 grid grid-cols-[58px_minmax(0,1fr)] items-center gap-2">
             <span className="text-gold">Рівень</span>
             <input className="input" type="number" min={1} max={MAX_LEVEL} value={state.level}
