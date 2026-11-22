@@ -22,7 +22,7 @@ export function TabsBar({ tabs, active, onSelect, onAdd, onClose, onRename }: {
             <span className="truncate">{label}</span>
             {tabs.length > 1 && (
               <button type="button" aria-label="Закрити вкладку" className="cursor-pointer text-muted hover:text-bad"
-                onClick={e => { e.stopPropagation(); if (window.confirm(`Закрити вкладку «${label}»? Збірка з неї зникне (збережена на сервері лишиться).`)) onClose(i); }}>×</button>
+                onClick={e => { e.stopPropagation(); if (window.confirm(`Закрити вкладку «${label}»? Збірка з неї зникне (збережена лишиться).`)) onClose(i); }}>×</button>
             )}
           </div>
         );
