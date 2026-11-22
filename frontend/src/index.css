@@ -38,7 +38,9 @@
 @layer components {
   .panel { @apply relative rounded border border-line bg-panel; }
   .panel-title { @apply flex items-baseline justify-between gap-3 px-5 pt-5 pb-1 font-serif text-xl font-semibold; }
-  .btn { @apply min-h-9 cursor-pointer whitespace-nowrap rounded-md border border-line bg-panel2 px-3 text-sm font-medium hover:border-line-strong disabled:cursor-default disabled:opacity-45; }
+  .btn { @apply inline-flex items-center justify-center gap-1.5 min-h-9 cursor-pointer whitespace-nowrap rounded-md border border-line bg-panel2 px-3 text-sm font-medium hover:border-line-strong disabled:cursor-default disabled:opacity-45; }
+  .btn-gold { @apply border-line-strong bg-gradient-to-b from-[#6b5230] to-[#3d2e1a] text-pw-gold hover:from-[#7d6038] hover:to-[#4a3820]; }
+  .toolbar { @apply flex flex-wrap items-center gap-2 rounded-md border border-line bg-gradient-to-b from-[#241f19] to-[#191612] p-1.5 shadow-[inset_0_1px_0_rgba(216,182,121,.08)]; }
   .input { @apply min-h-9 w-full rounded-md border border-line bg-well px-2.5 text-sm text-text focus:border-line-strong focus:outline-none; }
   .card-game { @apply rounded-[3px] border border-[#6d5932] bg-black/90 px-2.5 py-2 font-game text-sm leading-snug text-white; }
   .pixel { image-rendering: pixelated; }

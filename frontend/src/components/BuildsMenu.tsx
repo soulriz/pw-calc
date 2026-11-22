@@ -2,6 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
 import type { BuildState } from '../types';
 
+const Icon = ({ d }: { d: string }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4 flex-none fill-none stroke-current stroke-2 [stroke-linecap:round] [stroke-linejoin:round]"><path d={d} /></svg>
+);
+
 type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => !!v && typeof v === 'object' && !Array.isArray(v);
 const isBuild = (v: unknown): v is BuildState => isObj(v) && ('gear' in v || 'cls' in v || 'stats' in v);
@@ -57,26 +61,31 @@ export function BuildsMenu({ state, title, current, setCurrent, replace, onReset
   });
 
   return (
-    <div className="flex flex-wrap items-center justify-end gap-2">
-      <select className="input w-auto max-w-56" aria-label="Збережені збірки" value={current ?? ''} disabled={busy}
-        onChange={e => { const id = e.target.value; if (!id) { setCurrent(null); return; } run(async () => { const b = await api.build(id); await replace(b.data); setCurrent(id); flash('Завантажено'); }); }}>
-        <option value="">— збережені збірки —</option>
-        {list.map(b => <option key={b.id} value={b.id}>{b.name} · {new Date(b.updatedAt).toLocaleDateString('uk-UA')}</option>)}
-      </select>
-      <button className="btn" disabled={busy} onClick={() => run(async () => {
-        if (current && list.some(b => b.id === current)) await api.updateBuild(current, name, state);
-        else setCurrent((await api.createBuild(name, state)).id);
-        await refresh();
-        flash('Збережено');
-      })}>{current || import.meta.env.VITE_STATIC ? 'Зберегти' : 'Зберегти на сервері'}</button>
-      {current && <button className="btn" disabled={busy} onClick={() => run(async () => { setCurrent((await api.createBuild(name, state)).id); await refresh(); flash('Збережено як нову'); })}>Як нову</button>}
-      {current && <button className="btn" disabled={busy} onClick={() => run(async () => { await api.deleteBuild(current); setCurrent(null); await refresh(); flash('Видалено'); })}>Видалити</button>}
-      <button className="btn" disabled={busy} title="Усі збережені збірки у файл .json" onClick={exportAll}>Експорт</button>
-      <label className={'btn cursor-pointer ' + (busy ? 'pointer-events-none opacity-50' : '')} title="Додати збірки з файлу .json">
-        Імпорт<input type="file" accept=".json,application/json" className="hidden" onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) importFile(f); }} />
-      </label>
-      <button className={'btn ' + (armed ? 'border-bad text-bad' : '')} onClick={() => { if (!armed) { setArmed(true); return; } setArmed(false); setCurrent(null); onReset(); }}>
-        {armed ? 'Точно скинути?' : 'Скинути все'}
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="toolbar">
+        <select className="input w-auto max-w-60 border-[#4a3f31]" aria-label="Збережені збірки" value={current ?? ''} disabled={busy}
+          onChange={e => { const id = e.target.value; if (!id) { setCurrent(null); return; } run(async () => { const b = await api.build(id); await replace(b.data); setCurrent(id); flash('Завантажено'); }); }}>
+          <option value="">— збережені збірки —</option>
+          {list.map(b => <option key={b.id} value={b.id}>{b.name} · {new Date(b.updatedAt).toLocaleDateString('uk-UA')}</option>)}
+        </select>
+        <button className="btn btn-gold" disabled={busy} onClick={() => run(async () => {
+          if (current && list.some(b => b.id === current)) await api.updateBuild(current, name, state);
+          else setCurrent((await api.createBuild(name, state)).id);
+          await refresh();
+          flash('Збережено');
+        })}><Icon d="M5 3h11l3 3v15H5zM8 3v6h8V3M8 21v-7h8v7" />{current || import.meta.env.VITE_STATIC ? 'Зберегти' : 'Зберегти на сервері'}</button>
+        {current && <button className="btn" disabled={busy} onClick={() => run(async () => { setCurrent((await api.createBuild(name, state)).id); await refresh(); flash('Збережено як нову'); })}>Як нову</button>}
+        {current && <button className="btn" disabled={busy} onClick={() => run(async () => { await api.deleteBuild(current); setCurrent(null); await refresh(); flash('Видалено'); })}>Видалити</button>}
+      </div>
+      <div className="toolbar">
+        <button className="btn" disabled={busy} title="Усі збережені збірки у файл .json" onClick={exportAll}><Icon d="M12 4v11m-5-5 5 5 5-5M5 20h14" />Експорт</button>
+        <label className={'btn ' + (busy ? 'pointer-events-none opacity-45' : '')} title="Додати збірки з файлу .json">
+          <Icon d="M12 15V4m-5 5 5-5 5 5M5 20h14" />Імпорт
+          <input type="file" accept=".json,application/json" className="hidden" onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) importFile(f); }} />
+        </label>
+      </div>
+      <button className={'btn ' + (armed ? 'border-bad text-bad' : 'text-muted hover:text-text')} onClick={() => { if (!armed) { setArmed(true); return; } setArmed(false); setCurrent(null); onReset(); }}>
+        <Icon d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4" />{armed ? 'Точно скинути?' : 'Скинути все'}
       </button>
       {msg && <span className="text-sm text-muted" role="status">{msg}</span>}
     </div>

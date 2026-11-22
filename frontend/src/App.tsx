@@ -35,7 +35,7 @@ export default function App() {
   return (
     <TipProvider>
       <div className="mx-auto max-w-[980px] px-3.5 pt-5 pb-28 md:px-5 md:pt-8 md:pb-11">
-        <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <header className="mb-5 flex flex-col items-start gap-3.5">
           <div>
             <h1 className="font-serif text-4xl leading-none font-semibold md:text-5xl">Калькулятор персонажа</h1>
             <p className="mt-2 max-w-[56ch] text-sm text-muted">Предмети, камені й комплекти — з клієнта гри, формули — з mypers.world. {import.meta.env.VITE_STATIC ? 'Збірки зберігаються в цьому браузері; «Експорт» — копія у файл.' : 'Збірки можна зберігати на сервері.'}</p>
