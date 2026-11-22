@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { buffOk, buffValue } from '../calc';
-import { BUFF_TYPES, classIcon } from '../constants';
+import { BUFF_TYPES, CLASSES, classIcon } from '../constants';
 import type { BuffLevel, BuffSkill, BuildState, Meta } from '../types';
 import { Panel, useTip } from './common';
 
@@ -94,7 +94,9 @@ export function BuffsPanel({ state, meta, update }: { state: BuildState; meta: M
 function DebuffPicker({ ids, state, meta, update }: { ids: string[]; state: BuildState; meta: Meta; update: (fn: (s: BuildState) => BuildState) => void }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
-  const classes = [...new Set(ids.map(id => meta.buffs.skills[id]?.cls).filter(Boolean))] as string[];
+  // only the calculator's classes; debuffs of the others are not offered
+  const own = new Set(Object.values(CLASSES).map(c => c.name));
+  const classes = [...new Set(ids.map(id => meta.buffs.skills[id]?.cls))].filter((c): c is string => !!c && own.has(c));
   const [on, setOn] = useState<Set<string>>(() => new Set(classes));
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {

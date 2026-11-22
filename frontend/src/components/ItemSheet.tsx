@@ -9,6 +9,14 @@ import { ItemIcon } from './common';
 
 const MAX_ROWS = 300;
 
+/** every value a rolled property can take (min..max, step from the decimals shown), or null when it is too many for a list */
+function rangeValues([lo, hi]: [number, number], base: number): number[] | null {
+  const d = Math.max(...[lo, hi, base].map(x => (String(x).split('.')[1] ?? '').length));
+  const f = 10 ** d, a = Math.round(lo * f), b = Math.round(hi * f);
+  if (b < a || b - a > 300) return null;
+  return Array.from({ length: b - a + 1 }, (_, i) => (a + i) / f);
+}
+
 function summary(it: Item) {
   if (it.slot === 'ammo') return `Фіз. атака +${nf(it.dmg || 0)}, ранг зброї ${it.gr}–${it.grMax}`;
   if (it.fix) return it.fix.slice(0, 2).map(f => f.t).join(', ');
@@ -149,8 +157,15 @@ export function ItemSheet({ slotId, state, cat, update, remember, onClose }: {
                         return { ...x, a: x.a.filter(i => i !== k), v };
                       })} />
                     <span>{a.t}{!a.e && <span className="text-xs text-muted"> (не рахується)</span>}{a.d && <span className="block text-xs text-muted">{a.d}</span>}</span>
-                    {a.r && g.a.includes(k) && (
-                      // the rolled value inside the min–max of the item's pools
+                    {a.r && g.a.includes(k) && (rangeValues(a.r, Object.values(a.e!)[0]) ? (
+                      // the rolled value: pick one of the possible values of the item's pools
+                      <select aria-label={`Значення: ${a.t}`} className="input h-7 min-h-7 w-20 flex-none px-1"
+                        value={g.v?.[k] ?? Object.values(a.e!)[0]}
+                        onChange={e => { const v = Number(e.target.value); setGear(x => ({ ...x, v: { ...x.v, [k]: v } })); }}>
+                        {rangeValues(a.r, Object.values(a.e!)[0])!.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    ) : (
+                      // too many values for a list: type it
                       <input type="number" step="any" min={a.r[0]} max={a.r[1]} aria-label={`Значення: ${a.t}`} title={`від ${a.r[0]} до ${a.r[1]}`}
                         className="input h-7 min-h-7 w-20 flex-none px-1.5"
                         key={g.v?.[k] ?? 'base'} defaultValue={g.v?.[k] ?? Object.values(a.e!)[0]}
@@ -162,7 +177,7 @@ export function ItemSheet({ slotId, state, cat, update, remember, onClose }: {
                           e.target.value = String(clamped);
                           setGear(x => ({ ...x, v: { ...x.v, [k]: clamped } }));
                         }} />
-                    )}
+                    ))}
                     <span className="ml-auto text-xs whitespace-nowrap text-muted">{dec(a.p * 100, 2)}%</span>
                   </label>
                 ))}
