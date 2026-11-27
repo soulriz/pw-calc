@@ -17,6 +17,9 @@ function rangeValues([lo, hi]: [number, number], base: number): number[] | null 
   return Array.from({ length: b - a + 1 }, (_, i) => (a + i) / f);
 }
 
+// stones of a series ("Рубіновий камінь 10 р."): series name, so a stone can be swapped for another series at the same level
+const series = (name: string) => name.match(/^(.*\S)\s+\d+\s*р\.?$/)?.[1];
+
 function summary(it: Item) {
   if (it.slot === 'ammo') return `Фіз. атака +${nf(it.dmg || 0)}, ранг зброї ${it.gr}–${it.grMax}`;
   if (it.fix) return it.fix.slice(0, 2).map(f => f.t).join(', ');
@@ -36,8 +39,8 @@ export function ItemSheet({ slotId, state, cat, update, remember, onClose }: {
   const it = g && cat.items[g.id];
   const [q, setQ] = useState('');
   const [onlyCls, setOnlyCls] = useState(true);
-  const [minLvl, setMinLvl] = useState('');
-  const [maxLvl, setMaxLvl] = useState('');
+  const [lvlQ, setLvlQ] = useState('');
+  const [msg, setMsg] = useState('');
   // ammo: start with the kind that fits the worn bow / crossbow / sling
   const [sub, setSub] = useState(() => slotId === 'ammo' && RANGED.includes(cat.items[state.gear.weapon?.id ?? '']?.sub ?? '') ? cat.items[state.gear.weapon!.id].sub! : '');
   const [subs, setSubs] = useState<{ sub: string; count: number }[]>([]);
@@ -57,14 +60,14 @@ export function ItemSheet({ slotId, state, cat, update, remember, onClose }: {
       try {
         const lvl = (v: string) => (/^\d+$/.test(v.trim()) ? parseInt(v, 10) : undefined);
         const r = await api.items({ slot: slot.type!, q: q.trim() || undefined, classBit: onlyCls ? CLASS_BIT[state.cls] : undefined, level: state.level, take: MAX_ROWS,
-          minLvl: lvl(minLvl), maxLvl: lvl(maxLvl), sub: sub || undefined });
+          minLvl: lvl(lvlQ), maxLvl: lvl(lvlQ), sub: sub || undefined });
         remember(r.items);
         setList(r.items);
         setTotal(r.total);
       } finally { setLoading(false); }
     }, 200);
     return () => clearTimeout(t);
-  }, [q, onlyCls, minLvl, maxLvl, sub, slot.type, state.cls, state.level, remember]);
+  }, [q, onlyCls, lvlQ, sub, slot.type, state.cls, state.level, remember]);
 
   // categories of the slot (heavy / light / robe, weapon types…) for the filter
   useEffect(() => {
@@ -74,7 +77,8 @@ export function ItemSheet({ slotId, state, cat, update, remember, onClose }: {
   const setGear = (fn: (g: Gear) => Gear) => update(s => (s.gear[slotId] ? { ...s, gear: { ...s.gear, [slotId]: fn(s.gear[slotId]) } } : s));
   const choose = (id: string) => update(s => {
     const prev = s.gear[slotId], nit = cat.items[id];
-    const n = Math.min(nit.sock || 0, prev ? prev.n : 0);
+    // all sockets by default; keep a smaller count the user picked on the previous item
+    const n = prev && (cat.items[prev.id]?.sock || 0) > 0 ? Math.min(nit.sock || 0, prev.n) : nit.sock || 0;
     return { ...s, gear: { ...s.gear, [slotId]: { id, r: prev && nit.ref ? prev.r : 0, n, s: Array.from({ length: n }, (_, k) => prev?.s[k] ?? null), a: [], c: prev?.c ?? [] } } };
   });
   const toInventory = () => update(s => {
@@ -83,6 +87,32 @@ export function ItemSheet({ slotId, state, cat, update, remember, onClose }: {
     delete gear[slotId];
     return { ...s, gear, inv: cur && s.inv.length < INV_MAX ? [...s.inv, cur] : s.inv };
   });
+
+  /** this item's stones into every other worn item of the same kind (armour / weapon) that has sockets */
+  const copyStones = () => {
+    const targets = Object.entries(state.gear).filter(([sid, og]) => {
+      const oi = cat.items[og.id];
+      return sid !== slotId && !!oi?.sock && (oi.slot === 'weapon') === (it!.slot === 'weapon');
+    }).map(([sid]) => sid);
+    update(s => {
+      const gear = { ...s.gear };
+      for (const sid of targets) {
+        if (!gear[sid]) continue;
+        const oi = cat.items[gear[sid].id];
+        const n = Math.min(oi.sock!, g.n);
+        gear[sid] = { ...gear[sid], n, s: g.s.slice(0, n).map(id => (id && stoneSide(cat.stones[id], oi) ? id : null)) };
+      }
+      return { ...s, gear };
+    });
+    setMsg(targets.length ? `Скопійовано в ${targets.length} шт.` : 'Немає інших предметів з осередками');
+    setTimeout(() => setMsg(''), 2500);
+  };
+  const seriesList = [...new Set(cat.meta.stones.map(st => series(st.name)).filter((x): x is string => !!x))];
+  /** every stone that belongs to a series becomes the same level of another series */
+  const swapSeries = (to: string) => setGear(x => ({ ...x, s: x.s.map(id => {
+    const st = cat.stones[id ?? ''];
+    return (st && series(st.name) && cat.meta.stones.find(o => series(o.name) === to && o.lvl === st.lvl)?.id) || id;
+  }) }));
 
   const C = CLASSES[state.cls];
   const sq = norm(stoneQ);
@@ -93,16 +123,49 @@ export function ItemSheet({ slotId, state, cat, update, remember, onClose }: {
 
   return (
     <dialog ref={dlg} onClose={onClose} onClick={e => { if (e.target === dlg.current) dlg.current?.close(); }}
-      className="m-auto mb-0 w-full max-w-[560px] rounded-t-md border border-line bg-panel p-0 text-text backdrop:bg-black/65 md:mb-auto md:rounded-md">
-      <div className="flex max-h-[88vh] flex-col">
+      className="m-auto mb-0 w-full max-w-[560px] rounded-t-md border border-line bg-panel p-0 text-text backdrop:bg-black/65 md:my-0 md:mr-0 md:h-dvh md:max-h-dvh md:w-[520px] md:rounded-none md:border-y-0 md:border-r-0 md:backdrop:bg-black/35">
+      <div className="flex max-h-[88vh] flex-col md:h-full md:max-h-none">
         <div className="flex items-center justify-between gap-2.5 border-b border-line px-5 pt-5 pb-2.5">
           <h2 className="font-serif text-2xl font-semibold">{slot.title || slot.name}</h2>
           <button className="btn" onClick={() => dlg.current?.close()}>Готово</button>
         </div>
         <div className="min-h-0 flex-1 overflow-auto overscroll-contain px-4 pt-3.5 pb-5">
-          {it ? <ItemCard it={it} g={g} state={state} cat={cat} />
-              : <p className="rounded-lg border border-dashed border-line p-3.5 text-muted">Слот порожній. Виберіть предмет зі списку нижче.</p>}
-
+          <h3 className="font-serif text-xl font-semibold text-gold">Предмети для цього слоту</h3>
+          <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+            <select className="input" aria-label="Категорія" value={sub} onChange={e => setSub(e.target.value)}>
+              <option value="">Усі категорії</option>
+              {subs.map(x => <option key={x.sub} value={x.sub}>{x.sub} ({x.count})</option>)}
+            </select>
+            <div className="flex items-center gap-1.5 text-sm text-muted">
+              <span>Рівень</span>
+              <input className="input w-16" type="number" min={0} placeholder="усі" aria-label="Рівень предмета" value={lvlQ} onChange={e => setLvlQ(e.target.value)} />
+            </div>
+          </div>
+          <input className="input mt-2" type="search" placeholder="Пошук за назвою" aria-label="Пошук предмета" value={q} onChange={e => setQ(e.target.value)} autoFocus />
+          <label className="mt-2 flex items-center gap-2 text-sm text-muted"><input type="checkbox" checked={onlyCls} onChange={e => setOnlyCls(e.target.checked)} /> Лише для мого класу</label>
+          <ul className={'mt-2 grid max-h-[38vh] gap-1.5 overflow-auto overscroll-contain pr-1 ' + (loading ? 'opacity-60' : '')}>
+            {list.map(i => {
+              const probs = problems(i, state, cat.items);
+              const reqs = probs.filter(p => p.type === 'req').map(p => p.text);
+              const warn = !classOk(i, state.cls) ? `Недоступно для класу «${C.name}»` : reqs.length ? 'Не вистачає: ' + reqs.join(', ') : '';
+              const on = it?.id === i.id;
+              return (
+                <li key={i.id}>
+                  <button type="button" aria-pressed={on} onClick={() => choose(i.id)}
+                    className={'flex w-full cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-left ' + (on ? 'border-line-strong bg-win' : 'border-line bg-panel2 hover:border-line-strong')}>
+                    <span className="grid h-[40px] w-[40px] flex-none place-items-center rounded-md border border-line bg-well"><ItemIcon it={i} className="h-[32px] w-[32px]" /></span>
+                    <span className="min-w-0">
+                      <span className="block leading-tight font-bold [text-shadow:0_1px_1px_rgba(0,0,0,.6)]" style={{ color: i.col || '#fff' }}>{i.name}</span>
+                      <span className="block text-sm text-muted">{i.slot === 'ammo' ? i.sub : `Рівень ${i.slot === 'book' ? i.gr : i.lvl}`}, {summary(i)}</span>
+                      {warn && <span className="block text-sm text-bad">{warn}</span>}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          {total > list.length && <p className="mt-2 text-sm text-muted">Показано {list.length} з {nf(total)}. Уточніть пошук.</p>}
+          {!loading && list.length === 0 && <p className="mt-2 rounded-lg border border-dashed border-line p-3.5 text-muted">Нічого не знайдено{q.trim() ? ` за запитом «${q.trim()}»` : ''}.</p>}
           {it?.ref && (
             <div className="mt-3 flex items-center gap-3 rounded-lg border border-line bg-panel2 px-3.5 py-2.5">
               <label htmlFor="ref" className="font-bold">Заточка</label>
@@ -140,6 +203,17 @@ export function ItemSheet({ slotId, state, cat, update, remember, onClose }: {
                   );
                 })}
               </div>
+              {g.s.some(Boolean) && (
+                <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                  <select className="input w-auto max-w-[220px] flex-1" aria-label="Замінити тип каменів" value=""
+                    onChange={e => { if (e.target.value) swapSeries(e.target.value); }}>
+                    <option value="">Замінити тип (рівень той самий)…</option>
+                    {seriesList.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  {it.slot !== 'weapon' && <button type="button" className="btn" onClick={copyStones} title="Ті самі камені в усі інші вдягнені предмети з осередками">Дублювати в інший шмот</button>}
+                  {msg && <span className="text-sm text-ok" role="status">{msg}</span>}
+                </div>
+              )}
             </div>
           )}
 
@@ -208,44 +282,9 @@ export function ItemSheet({ slotId, state, cat, update, remember, onClose }: {
 
           {it && <div className="mt-2.5"><button className="btn" onClick={toInventory}>Зняти в інвентар</button></div>}
 
-          <h3 className="mt-4.5 font-serif text-xl font-semibold text-gold">Предмети для цього слоту</h3>
-          <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-            <select className="input" aria-label="Категорія" value={sub} onChange={e => setSub(e.target.value)}>
-              <option value="">Усі категорії</option>
-              {subs.map(x => <option key={x.sub} value={x.sub}>{x.sub} ({x.count})</option>)}
-            </select>
-            <div className="flex items-center gap-1.5 text-sm text-muted">
-              <span>Рівень</span>
-              <input className="input w-16" type="number" min={0} placeholder="від" aria-label="Рівень від" value={minLvl} onChange={e => setMinLvl(e.target.value)} />
-              <span>–</span>
-              <input className="input w-16" type="number" min={0} placeholder="до" aria-label="Рівень до" value={maxLvl} onChange={e => setMaxLvl(e.target.value)} />
-            </div>
-          </div>
-          <input className="input mt-2" type="search" placeholder="Пошук за назвою" aria-label="Пошук предмета" value={q} onChange={e => setQ(e.target.value)} autoFocus />
-          <label className="mt-2 flex items-center gap-2 text-sm text-muted"><input type="checkbox" checked={onlyCls} onChange={e => setOnlyCls(e.target.checked)} /> Лише для мого класу</label>
-          <ul className={'mt-2 grid gap-1.5 ' + (loading ? 'opacity-60' : '')}>
-            {list.map(i => {
-              const probs = problems(i, state, cat.items);
-              const reqs = probs.filter(p => p.type === 'req').map(p => p.text);
-              const warn = !classOk(i, state.cls) ? `Недоступно для класу «${C.name}»` : reqs.length ? 'Не вистачає: ' + reqs.join(', ') : '';
-              const on = it?.id === i.id;
-              return (
-                <li key={i.id}>
-                  <button type="button" aria-pressed={on} onClick={() => choose(i.id)}
-                    className={'flex w-full cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-left ' + (on ? 'border-line-strong bg-win' : 'border-line bg-panel2 hover:border-line-strong')}>
-                    <span className="grid h-[40px] w-[40px] flex-none place-items-center rounded-md border border-line bg-well"><ItemIcon it={i} className="h-[32px] w-[32px]" /></span>
-                    <span className="min-w-0">
-                      <span className="block leading-tight font-bold [text-shadow:0_1px_1px_rgba(0,0,0,.6)]" style={{ color: i.col || '#fff' }}>{i.name}</span>
-                      <span className="block text-sm text-muted">{i.slot === 'ammo' ? i.sub : `Рівень ${i.slot === 'book' ? i.gr : i.lvl}`}, {summary(i)}</span>
-                      {warn && <span className="block text-sm text-bad">{warn}</span>}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          {total > list.length && <p className="mt-2 text-sm text-muted">Показано {list.length} з {nf(total)}. Уточніть пошук.</p>}
-          {!loading && list.length === 0 && <p className="mt-2 rounded-lg border border-dashed border-line p-3.5 text-muted">Нічого не знайдено{q.trim() ? ` за запитом «${q.trim()}»` : ''}.</p>}
+          {it ? <div className="mt-3"><ItemCard it={it} g={g} state={state} cat={cat} /></div>
+              : <p className="mt-3 rounded-lg border border-dashed border-line p-3.5 text-muted">Слот порожній. Виберіть предмет у списку вище.</p>}
+
         </div>
       </div>
     </dialog>
